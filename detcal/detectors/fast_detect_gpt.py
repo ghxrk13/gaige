@@ -28,8 +28,20 @@ class FastDetectGPT:
 
     def load(self) -> None:
         import torch
+        import transformers
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
+        if self.quant == "4bit" and int(transformers.__version__.split(".")[0]) >= 5:
+            # Measured on 2026-07-21 (transformers 5.14.1): BitsAndBytesConfig is misrouted
+            # (eetq path selected, zero linear modules quantized) and the load proceeds fp16 —
+            # ~13 GB instead of ~5. The verifier below catches it if VRAM allows the load;
+            # on smaller GPUs it surfaces as OOM. Known-good: transformers 4.x line.
+            print(
+                "[detcal][WARN] transformers >=5 detected with quant=4bit — this combo has a "
+                "MEASURED silent-quantization failure; expect the load verifier to abort. "
+                "Use a transformers 4.x environment for 4-bit runs.",
+                flush=True,
+            )
         free_b, total_b = torch.cuda.mem_get_info()
         if free_b / 1e9 < self.min_free_gb:
             raise RuntimeError(
@@ -50,7 +62,15 @@ class FastDetectGPT:
         else:
             kwargs["torch_dtype"] = torch.float16
         before = torch.cuda.memory_allocated()
-        self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+        try:
+            self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+        except torch.OutOfMemoryError as e:
+            raise RuntimeError(
+                "OOM during load. If quant=4bit was requested, the library most likely IGNORED "
+                "the quantization config and attempted an fp16 load (a measured failure mode of "
+                "some transformers versions). This is an instrument-integrity failure, not a "
+                "hardware limitation: fix the environment, do not raise the VRAM."
+            ) from e
         self._model.eval()
         self._resident_gb = (torch.cuda.memory_allocated() - before) / 1e9
         self._verify_quantization()

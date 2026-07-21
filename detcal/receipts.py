@@ -33,6 +33,18 @@ def write_report(
         w.writerows(scores_rows)
 
     (outdir / "roc.json").write_text(json.dumps(results["roc"], indent=1))
+    (outdir / "results.json").write_text(
+        json.dumps(
+            {
+                "detcal_version": results["detcal_version"],
+                "auroc": results["auroc"],
+                "auroc_ci": results["auroc_ci"],
+                "thresholds": results["thresholds"],
+                "n_boot": results["n_boot"],
+            },
+            indent=1,
+        )
+    )
     env = {
         "generated_utc": ts,
         "detcal_version": results["detcal_version"],

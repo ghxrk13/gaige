@@ -12,7 +12,9 @@ dependencies = [
 
 [project.optional-dependencies]
 # GPU detectors expect these in the environment; versions are recorded in every receipt.
-gpu = ["torch", "transformers", "bitsandbytes", "accelerate"]
+# transformers pinned <5: 5.14.1 measured (2026-07-21) silently ignoring 4-bit config
+# (eetq misroute -> fp16 load). See PROGRESS.md incident receipt.
+gpu = ["torch", "transformers>=4.45,<5", "bitsandbytes", "accelerate"]
 
 [project.scripts]
 detcal = "detcal.cli:main"

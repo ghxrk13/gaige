@@ -104,6 +104,24 @@ def cmd_corpora(_args) -> int:
     return 0
 
 
+def cmd_score(args) -> int:
+    import json as _json
+
+    from .single import format_result, score_document
+
+    if args.file:
+        text = Path(args.file).read_text(encoding="utf-8")
+    elif args.text:
+        text = args.text
+    else:
+        text = sys.stdin.read()
+    if not text.strip():
+        raise SystemExit("no text to score")
+    r = score_document(Path(args.report), text)
+    print(_json.dumps(r, indent=1) if args.json else format_result(r))
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="detcal", description=__doc__)
     p.add_argument("--version", action="version", version=f"detcal {__version__}")
@@ -123,6 +141,16 @@ def main(argv=None) -> int:
 
     c = sub.add_parser("corpora", help="list built-in corpora")
     c.set_defaults(fn=cmd_corpora)
+
+    s = sub.add_parser(
+        "score",
+        help="score ONE document against a calibrated report (stdin, --file, or --text); logs nothing",
+    )
+    s.add_argument("--report", required=True, help="path to a reports/<ts>-<detector>/ directory")
+    s.add_argument("--file")
+    s.add_argument("--text")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(fn=cmd_score)
 
     args = p.parse_args(argv)
     return args.fn(args)
