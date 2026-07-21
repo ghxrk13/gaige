@@ -1,3 +1,7 @@
+# detcal — calibration + receipts for AI-text detectors.
+# Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
+# Commercial licensing available — see COMMERCIAL.md.
+
 """Score one document against a calibrated receipts report.
 
 The report directory is the instrument definition: which model, which quantization, which

@@ -3,7 +3,8 @@ name = "detcal"
 version = "0.0.1"
 description = "Calibration + receipts harness for AI-text detectors: your corpus, your thresholds, honest error bars."
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "ghxrk13" }]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",

@@ -1,3 +1,7 @@
+# detcal — calibration + receipts for AI-text detectors.
+# Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
+# Commercial licensing available — see COMMERCIAL.md.
+
 """detcal CLI.
 
   detcal run --corpus hc3-mini --n 100 --detector fast-detect-gpt --out reports/

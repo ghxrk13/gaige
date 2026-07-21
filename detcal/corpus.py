@@ -1,3 +1,7 @@
+# detcal — calibration + receipts for AI-text detectors.
+# Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
+# Commercial licensing available — see COMMERCIAL.md.
+
 """Corpus loading. Format: JSONL rows {"id": str, "text": str, "label": "human"|"ai"}.
 
 Built-in fetcher: hc3-mini — a seeded subsample of HC3 (Hello-SimpleAI), the classic
