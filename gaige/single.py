@@ -40,29 +40,74 @@ def percentile_among(sorted_vals: list[float], value: float) -> float:
     return bisect.bisect_right(sorted_vals, value) / len(sorted_vals)
 
 
-def version_mismatches(env: dict) -> list[str]:
-    import bitsandbytes
-    import torch
-    import transformers
+def _live_versions() -> dict:
+    """Versions of whatever is importable right now. Absent libraries are simply absent."""
+    live = {}
+    try:
+        import torch
 
-    stored = env["detector"]["versions"]
-    current = {
-        "torch": torch.__version__,
-        "transformers": transformers.__version__,
-        "bitsandbytes": bitsandbytes.__version__,
-    }
-    return [
-        f"{k}: report={stored.get(k)} current={v}"
-        for k, v in current.items()
-        if stored.get(k) not in (None, v)
-    ]
+        live["torch"] = torch.__version__
+    except Exception:
+        pass
+    try:
+        import transformers
+
+        live["transformers"] = transformers.__version__
+    except Exception:
+        pass
+    try:
+        import bitsandbytes
+
+        live["bitsandbytes"] = bitsandbytes.__version__
+    except Exception:
+        pass
+    return live
+
+
+def instrument_mismatches(env: dict, live_device: str | None = None) -> list[str]:
+    """Every recorded way this environment differs from the one that produced the thresholds.
+
+    Library versions were always checked. Device and dtype now are too, because they matter at
+    least as much: CUDA-4bit and CPU-fp32 are different numerics, so a threshold calibrated on
+    one is not valid on the other. Silently reusing it across that boundary is precisely the
+    error gaige exists to make visible in other people's tools.
+
+    Returns a list of human-readable differences; empty means the instrument matches.
+    """
+    det = env.get("detector", {})
+    out: list[str] = []
+
+    stored_versions = det.get("versions", {}) or {}
+    for k, v in _live_versions().items():
+        if stored_versions.get(k) not in (None, v):
+            out.append(f"{k}: report={stored_versions.get(k)} current={v}")
+
+    if live_device is None:
+        try:
+            import torch
+
+            live_device = "cuda" if torch.cuda.is_available() else "cpu"
+        except Exception:
+            live_device = None
+    stored_device = det.get("device")
+    if stored_device and live_device and stored_device != live_device:
+        out.append(
+            f"device: report={stored_device} current={live_device} "
+            "(different numerics - thresholds do not transfer)"
+        )
+    return out
+
+
+# Retained so existing callers keep working; the broader check is the one to use.
+def version_mismatches(env: dict) -> list[str]:
+    return instrument_mismatches(env)
 
 
 def score_document(report_dir: Path, text: str) -> dict:
     inst = load_instrument(report_dir)
     det_meta = inst["env"]["detector"]
 
-    mismatches = version_mismatches(inst["env"])
+    mismatches = instrument_mismatches(inst["env"])
 
     from .detectors.fast_detect_gpt import FastDetectGPT
 
@@ -92,7 +137,7 @@ def score_document(report_dir: Path, text: str) -> dict:
         "percentile_among_human": percentile_among(inst["human_scores"], score),
         "percentile_among_ai": percentile_among(inst["ai_scores"], score),
         "verdicts": verdicts,
-        "version_mismatches": mismatches,
+        "instrument_mismatches": mismatches,
         "instrument": {
             "report": str(report_dir),
             "corpus": inst["env"]["corpus"]["name"],
@@ -119,9 +164,9 @@ def format_result(r: dict) -> str:
             f"  CAVEAT: {r['n_words']} words < {MIN_RELIABLE_WORDS} — detector scores on text this "
             "short are noise-dominated; treat as unreliable in BOTH directions."
         )
-    if r["version_mismatches"]:
+    if r["instrument_mismatches"]:
         lines.append("  WARNING: environment differs from the report's fingerprint — thresholds may not transfer:")
-        for m in r["version_mismatches"]:
+        for m in r["instrument_mismatches"]:
             lines.append(f"    - {m}")
     lines.append(f"  instrument: {r['instrument']['model']} ({r['instrument']['quant']}) calibrated on {r['instrument']['corpus']}")
     lines.append("  note: evidence, not a verdict. Nothing was logged.")

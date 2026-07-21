@@ -32,7 +32,12 @@ def _build_detector(args):
     if args.detector == "fast-detect-gpt":
         from .detectors.fast_detect_gpt import FastDetectGPT
 
-        return FastDetectGPT(model_id=args.model, quant=args.quant, max_tokens=args.max_tokens)
+        return FastDetectGPT(
+            model_id=args.model,
+            quant=args.quant,
+            max_tokens=args.max_tokens,
+            device=args.device,
+        )
     raise SystemExit(f"unknown detector: {args.detector}")
 
 
@@ -45,7 +50,7 @@ def cmd_run(args) -> int:
     print(f"[corpus] {corpus.name} counts={corpus.counts} sha256={corpus.sha256[:16]}...")
 
     det = _build_detector(args)
-    print(f"[detector] loading {det.name} ({args.model}, {args.quant})...")
+    print(f"[detector] loading {det.name} ({args.model}, {args.quant}, device={args.device})...")
     det.load()
     print(f"[detector] loaded + quantization verified")
 
@@ -67,7 +72,7 @@ def cmd_run(args) -> int:
     reproduce = (
         f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
         f"--detector {args.detector} --model {args.model} --quant {args.quant} "
-        f"--max-tokens {args.max_tokens}"
+        f"--device {args.device} --max-tokens {args.max_tokens}"
     )
     report = write_report(outdir, corpus, det.metadata(), rows, results, reproduce)
     _print_receipt(report, results)
@@ -159,7 +164,10 @@ def main(argv=None) -> int:
     r.add_argument("--seed", type=int, default=17)
     r.add_argument("--detector", default="fast-detect-gpt")
     r.add_argument("--model", default="tiiuae/falcon-7b")
-    r.add_argument("--quant", default="4bit", choices=["4bit", "fp16"])
+    r.add_argument("--quant", default="4bit", choices=["4bit", "fp16", "fp32"],
+                   help="4bit is CUDA-only; use fp32 on CPU")
+    r.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"],
+                   help="auto prefers CUDA and falls back to CPU, recording the fallback")
     r.add_argument("--max-tokens", type=int, default=1024)
     r.add_argument("--n-boot", type=int, default=1000)
     r.add_argument("--root", default=".", help="project root holding corpora/ and reports/")
