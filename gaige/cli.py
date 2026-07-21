@@ -20,7 +20,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from . import __version__
+from . import __version__, runstate
 from . import analyze as analyze_mod
 from .corpus import fetch_hc3_mini, load_jsonl
 from .receipts import write_report
@@ -72,36 +72,71 @@ def cmd_run(args) -> int:
     print(f"[corpus] {corpus.name} counts={corpus.counts} sha256={corpus.sha256[:16]}...")
 
     det = _build_detector(args)
+
+    resuming = bool(args.resume)
+    state = None
+    done: dict[str, dict] = {}
+    if resuming:
+        outdir = Path(args.resume).resolve()
+        state = runstate.read_runstate(outdir)
+        # Cheap check first: refuse before spending minutes on a model load.
+        runstate.check_args_match(state, corpus, args.model, args.quant, args.max_tokens)
+        done = {r["id"]: r for r in runstate.load_partial(outdir)}
+        print(f"[resume] {outdir}")
+        print(f"[resume] {len(done)}/{len(corpus.items)} already scored; continuing")
+    else:
+        outdir = root / "reports" / f"{datetime.now():%Y%m%d-%H%M%S}-{args.detector}"
+
     print(f"[detector] loading {det.name} ({args.model}, {args.quant}, device={args.device})...")
     det.load()
     print("[detector] loaded + quantization verified")
 
-    rows = []
-    t_all = time.time()
-    for i, item in enumerate(corpus.items, 1):
-        t0 = time.time()
-        s = det.score(item["text"])
-        rows.append(
-            {
-                "id": item["id"],
-                "label": item["label"],
-                "score": s,
-                "seconds": round(time.time() - t0, 3),
-            }
-        )
-        if i % 25 == 0 or i == len(corpus.items):
-            print(f"[score] {i}/{len(corpus.items)} ({time.time() - t_all:.0f}s)")
-
-    results = analyze_mod.compute_results(
-        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
-    )
-    outdir = root / "reports" / f"{datetime.now():%Y%m%d-%H%M%S}-{args.detector}"
     reproduce = (
         f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
         f"--detector {args.detector} --model {args.model} --quant {args.quant} "
         f"--device {args.device} --max-tokens {args.max_tokens}"
     )
+    if resuming:
+        # Full fingerprint check: only now are library versions and the resolved device known.
+        runstate.check_instrument_match(state, det.metadata())
+    else:
+        runstate.write_runstate(outdir, corpus, det.metadata(), reproduce)
+
+    fh, writer = runstate.open_partial(outdir)
+    rows = []
+    t_all = time.time()
+    try:
+        for i, item in enumerate(corpus.items, 1):
+            if item["id"] in done:
+                rows.append(done[item["id"]])
+                continue
+            t0 = time.time()
+            s = det.score(item["text"])
+            row = {
+                "id": item["id"],
+                "label": item["label"],
+                "score": s,
+                "seconds": round(time.time() - t0, 3),
+            }
+            runstate.append_row(fh, writer, row)  # on disk before we move on
+            rows.append(row)
+            if i % 25 == 0 or i == len(corpus.items):
+                print(f"[score] {i}/{len(corpus.items)} ({time.time() - t_all:.0f}s)")
+    except (KeyboardInterrupt, Exception):
+        fh.close()
+        print(
+            f"\n[interrupted] {len(rows)}/{len(corpus.items)} scores are safe on disk.\n"
+            f"[interrupted] resume with:  gaige run --corpus {args.corpus} --n {args.n} "
+            f"--seed {args.seed} --resume {outdir}"
+        )
+        raise
+    fh.close()
+
+    results = analyze_mod.compute_results(
+        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
+    )
     report = write_report(outdir, corpus, det.metadata(), rows, results, reproduce)
+    runstate.mark_complete(outdir)
     _print_receipt(report, results)
     return 0
 
@@ -216,6 +251,10 @@ def main(argv=None) -> int:
     r.add_argument("--max-tokens", type=int, default=1024)
     r.add_argument("--n-boot", type=int, default=1000)
     r.add_argument("--root", default=".", help="project root holding corpora/ and reports/")
+    r.add_argument(
+        "--resume",
+        help="continue an interrupted run directory; refuses if the instrument or corpus changed",
+    )
     r.set_defaults(fn=cmd_run)
 
     a = sub.add_parser(
