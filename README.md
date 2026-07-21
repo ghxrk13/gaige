@@ -44,4 +44,5 @@ Next: Binoculars detector · quantization A/B receipts (bf16 vs 4-bit — measur
 generic REST-API detector adapter (calibrate the commercial tools too) · bring-your-own-corpus
 guidance · drift canaries (does your instrument still measure what it measured last term?).
 
-License: Apache-2.0.
+License: Apache-2.0. Maintainership is deliberately closed (see CONTRIBUTING.md) — issues
+and receipt-backed reproductions welcome; pull requests not accepted at this time.
