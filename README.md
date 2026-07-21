@@ -40,9 +40,22 @@ gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"
 v0.0.1 (burst 1): Fast-DetectGPT (analytic single-model) · HC3 subsample corpus · ROC/AUROC/
 threshold receipts with bootstrap CIs · quantization verification.
 
-Next: Binoculars detector · quantization A/B receipts (bf16 vs 4-bit — measured, not assumed) ·
-generic REST-API detector adapter (calibrate the commercial tools too) · bring-your-own-corpus
-guidance · drift canaries (does your instrument still measure what it measured last term?).
+Next (research-ranked — see PROGRESS.md): conformal FPR-bounded thresholds · subgroup-stratified
+receipts (length and style; the disparities that produce real false accusations) · Binoculars as
+detector #2 · quantization A/B receipts (bf16 vs 4-bit — measured, not assumed) · adversarial
+degradation panels · RAID/TH-Bench corpus adapters · watermark-verifier adapter · base-rate
+harm calculator · drift canaries (does your instrument still measure what it measured last term?).
 
-License: Apache-2.0. Maintainership is deliberately closed (see CONTRIBUTING.md) — issues
-and receipt-backed reproductions welcome; pull requests not accepted at this time.
+## Licensing and the name
+
+**Code: AGPL-3.0** (`LICENSE`). Free to use, study, modify, and share — including inside an
+institution, in research, and in an appeal against a detector's verdict. If you offer a
+*modified* version to others as a network service, publish your modifications. A commercial
+license removes that obligation: see `COMMERCIAL.md`.
+
+**Name: not licensed.** No open-source license grants trademark rights. You may fork freely —
+under a different name. See `TRADEMARK.md`; the standards there exist so that "a gaige report"
+keeps meaning something.
+
+Maintainership is deliberately closed (see `CONTRIBUTING.md`) — issues and receipt-backed
+reproductions very welcome; pull requests not accepted at this time.
