@@ -1,4 +1,4 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
@@ -15,7 +15,7 @@ conformal prediction to machine-generated-text detection specifically and report
 FPRs staying within the theoretical bound across seven detectors at alpha from 0.2 to 0.005.
 
 Cost: the guarantee needs samples. At alpha = 0.01 you need at least 99 human calibration
-samples for the bound to be attainable at all; detcal refuses rather than pretending.
+samples for the bound to be attainable at all; gaige refuses rather than pretending.
 """
 
 from __future__ import annotations

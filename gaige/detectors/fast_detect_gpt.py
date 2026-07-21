@@ -1,4 +1,4 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
@@ -7,7 +7,7 @@
 Score = the analytic sampling discrepancy of Bao et al., "Fast-DetectGPT: Efficient
 Zero-Shot Detection of Machine-Generated Text via Conditional Probability Curvature"
 (ICLR 2024), in the sampling==scoring configuration (one forward pass, logits_ref ==
-logits_score). Raw criterion only — calibration against a corpus is detcal's job.
+logits_score). Raw criterion only — calibration against a corpus is gaige's job.
 
 Quantization honesty: loading in 4-bit is REQUESTED, then VERIFIED. Some library-version
 combinations silently ignore quantization config and load fp16 — which changes both VRAM
@@ -41,7 +41,7 @@ class FastDetectGPT:
             # ~13 GB instead of ~5. The verifier below catches it if VRAM allows the load;
             # on smaller GPUs it surfaces as OOM. Known-good: transformers 4.x line.
             print(
-                "[detcal][WARN] transformers >=5 detected with quant=4bit — this combo has a "
+                "[gaige][WARN] transformers >=5 detected with quant=4bit — this combo has a "
                 "MEASURED silent-quantization failure; expect the load verifier to abort. "
                 "Use a transformers 4.x environment for 4-bit runs.",
                 flush=True,

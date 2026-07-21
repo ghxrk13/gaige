@@ -1,4 +1,4 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
@@ -40,7 +40,7 @@ def write_report(
     (outdir / "results.json").write_text(
         json.dumps(
             {
-                "detcal_version": results["detcal_version"],
+                "gaige_version": results["gaige_version"],
                 "auroc": results["auroc"],
                 "auroc_ci": results["auroc_ci"],
                 "thresholds": results["thresholds"],
@@ -51,7 +51,7 @@ def write_report(
     )
     env = {
         "generated_utc": ts,
-        "detcal_version": results["detcal_version"],
+        "gaige_version": results["gaige_version"],
         "host": {"platform": platform.platform(), "node_role": "reference GPU box"},
         "detector": detector_meta,
         "corpus": {
@@ -66,9 +66,9 @@ def write_report(
 
     a_lo, a_hi = results["auroc_ci"]
     lines = [
-        f"# detcal receipt — {corpus.name} × {detector_meta['detector']}",
+        f"# gaige receipt — {corpus.name} × {detector_meta['detector']}",
         "",
-        f"generated: {ts} · detcal {results['detcal_version']}",
+        f"generated: {ts} · gaige {results['gaige_version']}",
         "",
         "## Instrument fingerprint",
         f"- model: `{detector_meta['model_id']}` · quant requested **{detector_meta['quant_requested']}**, "

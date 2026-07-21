@@ -1,9 +1,9 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
 """Detector protocol: anything that maps text -> scalar score (higher = more AI-like)
-and can fully describe itself for the receipt. Calibration is detcal's job, not the
+and can fully describe itself for the receipt. Calibration is gaige's job, not the
 detector's — detectors here emit raw criteria, never vendor-calibrated probabilities.
 """
 

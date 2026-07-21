@@ -1,6 +1,6 @@
 # Commercial licensing
 
-detcal is dual-licensed.
+gaige is dual-licensed.
 
 ## 1. AGPL-3.0 (the default, free)
 
@@ -20,7 +20,7 @@ parties would defeat the point.
 
 ## 2. Commercial license (paid)
 
-If you want to build on detcal *without* the AGPL's source-publication obligation — embedding
+If you want to build on gaige *without* the AGPL's source-publication obligation — embedding
 it in a closed product, offering a modified version as a hosted service, or shipping it inside
 proprietary software — a commercial license removes that obligation.
 

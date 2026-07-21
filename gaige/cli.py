@@ -1,12 +1,12 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
-"""detcal CLI.
+"""gaige CLI.
 
-  detcal run --corpus hc3-mini --n 100 --detector fast-detect-gpt --out reports/
-  detcal run --corpus path/to/labeled.jsonl ...
-  detcal corpora
+  gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt --out reports/
+  gaige run --corpus path/to/labeled.jsonl ...
+  gaige corpora
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def cmd_run(args) -> int:
         thresholds.append(row)
 
     results = {
-        "detcal_version": __version__,
+        "gaige_version": __version__,
         "auroc": auroc,
         "auroc_ci": auroc_ci,
         "thresholds": thresholds,
@@ -87,7 +87,7 @@ def cmd_run(args) -> int:
     }
     outdir = root / "reports" / f"{datetime.now():%Y%m%d-%H%M%S}-{args.detector}"
     reproduce = (
-        f"detcal run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
+        f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
         f"--detector {args.detector} --model {args.model} --quant {args.quant} "
         f"--max-tokens {args.max_tokens}"
     )
@@ -127,8 +127,8 @@ def cmd_score(args) -> int:
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(prog="detcal", description=__doc__)
-    p.add_argument("--version", action="version", version=f"detcal {__version__}")
+    p = argparse.ArgumentParser(prog="gaige", description=__doc__)
+    p.add_argument("--version", action="version", version=f"gaige {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="score a labeled corpus and emit a receipts report")

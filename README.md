@@ -1,4 +1,4 @@
-# detcal
+# gaige
 
 **Calibration + receipts for AI-text detectors.** Your corpus, your thresholds, honest error
 bars — instead of a vendor's black-box score.
@@ -10,11 +10,11 @@ quantization, the library versions, and the kind of text it reads. Almost nobody
 one knows their actual false-positive rate on their own material — they trust a marketing
 page. When the accusation lands on a real person, "the tool said 87%" is not evidence.
 
-detcal takes a labeled corpus (known-human + known-AI text) and any pluggable detector, and
+gaige takes a labeled corpus (known-human + known-AI text) and any pluggable detector, and
 emits a **receipts report**: ROC + AUROC with bootstrap confidence intervals, operating
 thresholds at target false-positive rates with *achieved* (measured) rates, and a complete
 instrument fingerprint — model, quantization **verified at load time** (some library combos
-silently ignore 4-bit and load fp16, which shifts scores; detcal refuses to emit numbers
+silently ignore 4-bit and load fp16, which shifts scores; gaige refuses to emit numbers
 from a load it can't prove), versions, GPU, corpus hash, and the exact reproduce command.
 
 If you use a detector: know its error bars on text like yours before you act on it.
@@ -24,9 +24,9 @@ If you're judged by one: these receipts are what an auditable process looks like
 
 ```bash
 pip install -e .            # plus torch/transformers/bitsandbytes in your GPU env
-detcal run --corpus hc3-mini --n 100 --detector fast-detect-gpt
+gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt
 # → reports/<ts>/report.md + scores.csv + roc.json + env.json
-detcal run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
+gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
 ```
 
 ## What it will never do

@@ -1,5 +1,5 @@
 [project]
-name = "detcal"
+name = "gaige"
 version = "0.0.1"
 description = "Calibration + receipts harness for AI-text detectors: your corpus, your thresholds, honest error bars."
 readme = "README.md"
@@ -18,11 +18,11 @@ dependencies = [
 gpu = ["torch", "transformers>=4.45,<5", "bitsandbytes", "accelerate"]
 
 [project.scripts]
-detcal = "detcal.cli:main"
+gaige = "gaige.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["detcal*"]
+include = ["gaige*"]

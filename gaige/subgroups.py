@@ -1,4 +1,4 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
@@ -10,7 +10,7 @@ et al., arXiv:2502.04528), and seven commercial detectors misclassified over hal
 human-written TOEFL essays by non-native speakers as AI — an average 61.2% FPR versus ~5.2%
 on native-speaker essays (Liang et al., arXiv:2304.02819).
 
-detcal therefore reports error rates per subgroup by default. A corpus can carry arbitrary
+gaige therefore reports error rates per subgroup by default. A corpus can carry arbitrary
 metadata keys on each row (e.g. "length_bucket", "l1", "domain"); any key present on every
 human-labeled row becomes a stratification axis.
 

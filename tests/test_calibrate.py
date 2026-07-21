@@ -1,11 +1,11 @@
-# detcal — calibration + receipts for AI-text detectors.
+# gaige — calibration + receipts for AI-text detectors.
 # Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
 import numpy as np
 import pytest
 
-from detcal import calibrate
+from gaige import calibrate
 
 
 def make(scores_h, scores_a):

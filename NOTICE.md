@@ -1,6 +1,6 @@
 # Third-party notices and attribution
 
-detcal implements published detection criteria. The algorithms are described in the papers
+gaige implements published detection criteria. The algorithms are described in the papers
 below; the implementations in this repository were written from those descriptions rather
 than copied, but attribution is owed either way — and a tool about provenance should model
 good provenance.
@@ -25,5 +25,5 @@ arXiv:2310.05130 · reference implementation: https://github.com/baoguangsheng/f
 ## Corpora
 
 `hc3-mini` subsamples HC3 (Hello-SimpleAI), distributed on the Hugging Face Hub under its own
-terms. detcal downloads it at run time and redistributes none of it. Every report records the
+terms. gaige downloads it at run time and redistributes none of it. Every report records the
 corpus sha256 so a reader can verify which subsample produced a number.
