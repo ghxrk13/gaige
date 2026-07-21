@@ -32,6 +32,20 @@ log = logging.getLogger("gaige.detector")
 # Quantizations that only exist on CUDA. bitsandbytes 4-bit has no CPU kernel path.
 CUDA_ONLY_QUANT = {"4bit"}
 
+# Default scoring model per device, used only when the caller did not choose one.
+#
+# The point of a default is that `gaige run` succeeds on whatever machine you are sitting at.
+# falcon-7b is the reference instrument but is a ~14 GB download and impractical on CPU
+# (measured ~20-36 s/sample); gpt2-large runs anywhere and scores in fractions of a second.
+#
+# These are ERGONOMIC defaults, not a claim about which model detects best. That is an
+# empirical question gaige should answer with a published comparison rather than assert here,
+# and until it does, an auto-selected model is recorded as such on every receipt.
+DEFAULT_MODEL = {
+    "cuda": ("tiiuae/falcon-7b", "4bit"),
+    "cpu": ("gpt2-large", "fp32"),
+}
+
 
 def _available_ram_gb() -> float | None:
     """Best-effort available system RAM, or None if it cannot be determined.
@@ -76,6 +90,7 @@ class FastDetectGPT:
     max_tokens: int = 1024
     device: str = "auto"  # "auto" | "cuda" | "cpu"
     min_free_gb: float = 8.0
+    model_auto_selected: bool = False
     name: str = field(init=False, default="fast-detect-gpt")
     _loaded: bool = field(init=False, default=False)
     _device: str = field(init=False, default="")
@@ -314,6 +329,7 @@ class FastDetectGPT:
             "device": device,
             "device_requested": self.device,
             "device_fallback": self._device_fallback,
+            "model_auto_selected": self.model_auto_selected,
             "compute": compute,
             "score_semantics": "analytic sampling discrepancy; higher = more AI-like; RAW criterion (uncalibrated by design)",
         }

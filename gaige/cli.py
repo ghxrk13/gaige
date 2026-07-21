@@ -28,15 +28,37 @@ from .receipts import write_report
 TARGET_FPRS = analyze_mod.TARGET_FPRS
 
 
+def _resolve_model(args):
+    """Pick a scoring model when the caller didn't. Returns (model_id, quant, auto_selected).
+
+    Auto-selection exists so `gaige run` works on the machine you actually have. It is recorded
+    on the receipt, because a number whose instrument was chosen for you should say so.
+    """
+    from .detectors.fast_detect_gpt import DEFAULT_MODEL, FastDetectGPT
+
+    if args.model:
+        return args.model, args.quant, False
+    device, _fell_back = FastDetectGPT(device=args.device).resolve_device()
+    model_id, quant = DEFAULT_MODEL[device]
+    print(
+        f"[detector] no --model given; auto-selected {model_id} ({quant}) for device={device}. "
+        "Pass --model to choose deliberately."
+    )
+    return model_id, quant, True
+
+
 def _build_detector(args):
     if args.detector == "fast-detect-gpt":
         from .detectors.fast_detect_gpt import FastDetectGPT
 
+        model_id, quant, auto = _resolve_model(args)
+        args.model, args.quant = model_id, quant  # so the reproduce line is explicit
         return FastDetectGPT(
-            model_id=args.model,
-            quant=args.quant,
+            model_id=model_id,
+            quant=quant,
             max_tokens=args.max_tokens,
             device=args.device,
+            model_auto_selected=auto,
         )
     raise SystemExit(f"unknown detector: {args.detector}")
 
@@ -163,7 +185,8 @@ def main(argv=None) -> int:
     r.add_argument("--n", type=int, default=100, help="per-class sample count for built-in corpora")
     r.add_argument("--seed", type=int, default=17)
     r.add_argument("--detector", default="fast-detect-gpt")
-    r.add_argument("--model", default="tiiuae/falcon-7b")
+    r.add_argument("--model", default=None,
+                   help="scoring model; default is chosen per device (see --help output of run)")
     r.add_argument("--quant", default="4bit", choices=["4bit", "fp16", "fp32"],
                    help="4bit is CUDA-only; use fp32 on CPU")
     r.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"],
