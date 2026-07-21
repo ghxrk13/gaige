@@ -98,11 +98,6 @@ def instrument_mismatches(env: dict, live_device: str | None = None) -> list[str
     return out
 
 
-# Retained so existing callers keep working; the broader check is the one to use.
-def version_mismatches(env: dict) -> list[str]:
-    return instrument_mismatches(env)
-
-
 def score_document(report_dir: Path, text: str, detector=None) -> dict:
     """Score one document against a calibrated report.
 

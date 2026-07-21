@@ -96,23 +96,19 @@ def test_different_corpus_refused(tmp_path):
         runstate.check_args_match(state, Corpus(sha="different"), "gpt2", "fp32", 512)
 
 
-def test_different_model_refused_before_load(tmp_path):
-    """Caught cheaply, before spending minutes downloading and loading a model."""
+@pytest.mark.parametrize(
+    ("model", "quant", "max_tokens", "expect"),
+    [
+        ("tiiuae/falcon-7b", "fp32", 512, "model_id"),
+        ("gpt2", "4bit", 512, "quant_requested"),
+        ("gpt2", "fp32", 1024, "max_tokens"),
+    ],
+)
+def test_changed_argument_refused_before_load(tmp_path, model, quant, max_tokens, expect):
+    """Each caught cheaply, before spending minutes downloading and loading a model."""
     state = begun(tmp_path)
-    with pytest.raises(runstate.ResumeRefused, match="model_id"):
-        runstate.check_args_match(state, Corpus(), "tiiuae/falcon-7b", "fp32", 512)
-
-
-def test_different_quant_refused(tmp_path):
-    state = begun(tmp_path)
-    with pytest.raises(runstate.ResumeRefused, match="quant_requested"):
-        runstate.check_args_match(state, Corpus(), "gpt2", "4bit", 512)
-
-
-def test_different_max_tokens_refused(tmp_path):
-    state = begun(tmp_path)
-    with pytest.raises(runstate.ResumeRefused, match="max_tokens"):
-        runstate.check_args_match(state, Corpus(), "gpt2", "fp32", 1024)
+    with pytest.raises(runstate.ResumeRefused, match=expect):
+        runstate.check_args_match(state, Corpus(), model, quant, max_tokens)
 
 
 def test_device_change_refused_after_load(tmp_path):
