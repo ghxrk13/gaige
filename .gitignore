@@ -1,0 +1,7 @@
+corpora/
+reports/
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/

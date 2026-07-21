@@ -1,0 +1,25 @@
+[project]
+name = "detcal"
+version = "0.0.1"
+description = "Calibration + receipts harness for AI-text detectors: your corpus, your thresholds, honest error bars."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+# GPU detectors expect these in the environment; versions are recorded in every receipt.
+gpu = ["torch", "transformers", "bitsandbytes", "accelerate"]
+
+[project.scripts]
+detcal = "detcal.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["detcal*"]
