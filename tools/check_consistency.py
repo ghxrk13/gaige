@@ -98,6 +98,7 @@ def check_required_docs() -> None:
         "TRADEMARK.md",
         "NOTICE.md",
         "PROGRESS.md",
+        "RUNBOOK.md",
     ):
         if not (ROOT / name).exists():
             fail(f"missing expected document: {name}")
