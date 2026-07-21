@@ -22,8 +22,8 @@ MIN_RELIABLE_WORDS = 50
 
 
 def load_instrument(report_dir: Path) -> dict:
-    env = json.loads((report_dir / "env.json").read_text())
-    results = json.loads((report_dir / "results.json").read_text())
+    env = json.loads((report_dir / "env.json").read_text(encoding="utf-8"))
+    results = json.loads((report_dir / "results.json").read_text(encoding="utf-8"))
     human, ai = [], []
     with open(report_dir / "scores.csv", newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):

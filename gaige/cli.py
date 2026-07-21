@@ -4,8 +4,11 @@
 
 """gaige CLI.
 
-  gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt --out reports/
-  gaige run --corpus path/to/labeled.jsonl ...
+  gaige run     --corpus hc3-mini --n 100 --detector fast-detect-gpt
+  gaige run     --corpus path/to/labeled.jsonl ...
+  gaige analyze --report reports/<ts>-<detector>/     # re-derive results, no GPU needed
+  gaige analyze --scores path/to/scores.csv
+  gaige score   --report reports/<ts>-<detector>/ --file draft.md
   gaige corpora
 """
 
@@ -17,14 +20,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
-
 from . import __version__
-from . import calibrate
+from . import analyze as analyze_mod
 from .corpus import fetch_hc3_mini, load_jsonl
 from .receipts import write_report
 
-TARGET_FPRS = (0.01, 0.05)
+TARGET_FPRS = analyze_mod.TARGET_FPRS
 
 
 def _build_detector(args):
@@ -41,10 +42,10 @@ def cmd_run(args) -> int:
         corpus = fetch_hc3_mini(root / "corpora", n_per_class=args.n, seed=args.seed)
     else:
         corpus = load_jsonl(Path(args.corpus))
-    print(f"[corpus] {corpus.name} counts={corpus.counts} sha256={corpus.sha256[:16]}…")
+    print(f"[corpus] {corpus.name} counts={corpus.counts} sha256={corpus.sha256[:16]}...")
 
     det = _build_detector(args)
-    print(f"[detector] loading {det.name} ({args.model}, {args.quant})…")
+    print(f"[detector] loading {det.name} ({args.model}, {args.quant})...")
     det.load()
     print(f"[detector] loaded + quantization verified")
 
@@ -59,32 +60,9 @@ def cmd_run(args) -> int:
         if i % 25 == 0 or i == len(corpus.items):
             print(f"[score] {i}/{len(corpus.items)} ({time.time() - t_all:.0f}s)")
 
-    scores = np.array([r["score"] for r in rows], dtype=np.float64)
-    labels = np.array([r["label"] for r in rows])
-
-    auroc = calibrate.auroc(scores, labels)
-    auroc_ci = calibrate.bootstrap_ci(scores, labels, calibrate.auroc, n_boot=args.n_boot, seed=args.seed)
-    thresholds = []
-    for tf in TARGET_FPRS:
-        row = calibrate.threshold_at_fpr(scores, labels, tf)
-        thr = row["threshold"]
-        row["tpr_ci"] = calibrate.bootstrap_ci(
-            scores,
-            labels,
-            lambda s, l, thr=thr: float((s[l == "ai"] >= thr).mean()),
-            n_boot=args.n_boot,
-            seed=args.seed,
-        )
-        thresholds.append(row)
-
-    results = {
-        "gaige_version": __version__,
-        "auroc": auroc,
-        "auroc_ci": auroc_ci,
-        "thresholds": thresholds,
-        "roc": calibrate.roc_points(scores, labels),
-        "n_boot": args.n_boot,
-    }
+    results = analyze_mod.compute_results(
+        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
+    )
     outdir = root / "reports" / f"{datetime.now():%Y%m%d-%H%M%S}-{args.detector}"
     reproduce = (
         f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
@@ -92,13 +70,57 @@ def cmd_run(args) -> int:
         f"--max-tokens {args.max_tokens}"
     )
     report = write_report(outdir, corpus, det.metadata(), rows, results, reproduce)
-    print(f"\n[receipt] {report}")
-    print(f"[receipt] AUROC {auroc:.4f} (CI {auroc_ci[0]:.4f}-{auroc_ci[1]:.4f})")
-    for row in thresholds:
+    _print_receipt(report, results)
+    return 0
+
+
+def _print_receipt(report_path: Path, results: dict) -> None:
+    lo, hi = results["auroc_ci"]
+    print(f"\n[receipt] {report_path}")
+    print(f"[receipt] AUROC {results['auroc']:.4f} (CI {lo:.4f}-{hi:.4f})")
+    for row in results["thresholds"]:
         print(
             f"[receipt] @FPR<={row['target_fpr']:.0%}: thr={row['threshold']:.4f} "
             f"achievedFPR={row['achieved_fpr']:.3%} TPR={row['achieved_tpr']:.1%}"
         )
+
+
+def cmd_analyze(args) -> int:
+    """Re-derive results from scores that already exist. No model, no GPU, no re-scoring."""
+    if args.report:
+        src = Path(args.report).resolve()
+        rows, corpus, detector_meta = analyze_mod.load_report(src)
+        origin = f"report {src}"
+    else:
+        src = Path(args.scores).resolve()
+        rows = analyze_mod.read_scores_csv(src)
+        corpus, detector_meta = analyze_mod.UNKNOWN_CORPUS, dict(analyze_mod.UNKNOWN_DETECTOR)
+        origin = f"scores {src}"
+
+    n_h = sum(1 for r in rows if r["label"] == "human")
+    print(f"[analyze] {origin}")
+    print(f"[analyze] {len(rows)} scores (human {n_h}, ai {len(rows) - n_h}) | corpus {corpus.name}")
+    if detector_meta.get("instrument_unknown"):
+        print(
+            "[analyze] WARNING: no instrument fingerprint accompanies these scores. Thresholds "
+            "below describe THIS score set only and attest to no measurable instrument."
+        )
+
+    results = analyze_mod.compute_results(
+        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
+    )
+
+    outdir = Path(args.out).resolve() if args.out else (
+        src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
+        if src.is_file()
+        else src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
+    )
+    reproduce = (
+        f"gaige analyze {'--report' if args.report else '--scores'} {src} "
+        f"--n-boot {args.n_boot} --seed {args.seed}"
+    )
+    report = write_report(outdir, corpus, detector_meta, rows, results, reproduce)
+    _print_receipt(report, results)
     return 0
 
 
@@ -142,6 +164,19 @@ def main(argv=None) -> int:
     r.add_argument("--n-boot", type=int, default=1000)
     r.add_argument("--root", default=".", help="project root holding corpora/ and reports/")
     r.set_defaults(fn=cmd_run)
+
+    a = sub.add_parser(
+        "analyze",
+        help="re-derive results from existing scores (no model, no GPU) — for replaying a "
+        "report, re-running the statistics, or calibrating where the GPU isn't",
+    )
+    a_src = a.add_mutually_exclusive_group(required=True)
+    a_src.add_argument("--report", help="an existing reports/<ts>-<detector>/ directory")
+    a_src.add_argument("--scores", help="a bare scores.csv (columns: label, score[, id, seconds])")
+    a.add_argument("--n-boot", type=int, default=1000)
+    a.add_argument("--seed", type=int, default=17)
+    a.add_argument("--out", help="output directory (default: a new timestamped dir beside the source)")
+    a.set_defaults(fn=cmd_analyze)
 
     c = sub.add_parser("corpora", help="list built-in corpora")
     c.set_defaults(fn=cmd_corpora)

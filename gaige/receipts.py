@@ -20,6 +20,54 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def _fingerprint_lines(m: dict) -> list[str]:
+    """Describe the instrument using only what was actually recorded.
+
+    Different devices record different things — a CUDA 4-bit load can prove itself by counting
+    Linear4bit modules and resident VRAM; a CPU fp32 load cannot, because there is nothing to
+    quantize. Rendering must therefore report what exists and stay silent about what doesn't,
+    rather than KeyError or, worse, imply a verification that never happened.
+    """
+    if m.get("instrument_unknown"):
+        return [
+            "- **INSTRUMENT UNKNOWN.** These scores arrived without a fingerprint, so nothing here "
+            "identifies the model, quantization, device, or library versions that produced them. "
+            "The thresholds below describe this score set and nothing else — they are not "
+            "transferable, and they are not evidence about any instrument.",
+        ]
+
+    lines = [f"- model: `{m.get('model_id', 'unknown')}`"]
+
+    quant = m.get("quant_requested", "unknown")
+    qv = m.get("quant_verified") or {}
+    if qv.get("linear4bit_modules"):
+        lines[0] += (
+            f" · quant requested **{quant}**, verified: {qv['linear4bit_modules']} Linear4bit "
+            f"modules, {qv.get('resident_gb', '?')} GB resident"
+        )
+    elif qv.get("resident_gb") is not None:
+        lines[0] += f" · dtype **{quant}**, {qv['resident_gb']} GB resident"
+    else:
+        lines[0] += f" · dtype/quant **{quant}**"
+
+    device = m.get("device", "unknown")
+    compute = m.get("compute", {}) or {}
+    dev_line = f"- device: **{device}**"
+    if compute.get("name"):
+        dev_line += f" ({compute['name']})"
+    if m.get("device_fallback"):
+        dev_line += "  ← **fell back from CUDA; this is a DIFFERENT instrument than a GPU run**"
+    lines.append(dev_line)
+
+    if m.get("versions"):
+        lines.append(f"- versions: {json.dumps(m['versions'])}")
+    if m.get("max_tokens") is not None:
+        lines.append(f"- max_tokens: {m['max_tokens']}")
+    if m.get("score_semantics"):
+        lines.append(f"- score semantics: {m['score_semantics']}")
+    return lines
+
+
 def write_report(
     outdir: Path,
     corpus,
@@ -36,7 +84,7 @@ def write_report(
         w.writeheader()
         w.writerows(scores_rows)
 
-    (outdir / "roc.json").write_text(json.dumps(results["roc"], indent=1))
+    (outdir / "roc.json").write_text(json.dumps(results["roc"], indent=1), encoding="utf-8")
     (outdir / "results.json").write_text(
         json.dumps(
             {
@@ -47,12 +95,13 @@ def write_report(
                 "n_boot": results["n_boot"],
             },
             indent=1,
-        )
+        ),
+        encoding="utf-8",
     )
     env = {
         "generated_utc": ts,
         "gaige_version": results["gaige_version"],
-        "host": {"platform": platform.platform(), "node_role": "reference GPU box"},
+        "host": {"platform": platform.platform(), "device": detector_meta.get("device", "unknown")},
         "detector": detector_meta,
         "corpus": {
             "name": corpus.name,
@@ -62,7 +111,7 @@ def write_report(
         },
         "reproduce": reproduce_cmd,
     }
-    (outdir / "env.json").write_text(json.dumps(env, indent=1))
+    (outdir / "env.json").write_text(json.dumps(env, indent=1), encoding="utf-8")
 
     a_lo, a_hi = results["auroc_ci"]
     lines = [
@@ -71,12 +120,7 @@ def write_report(
         f"generated: {ts} · gaige {results['gaige_version']}",
         "",
         "## Instrument fingerprint",
-        f"- model: `{detector_meta['model_id']}` · quant requested **{detector_meta['quant_requested']}**, "
-        f"verified: {detector_meta['quant_verified']['linear4bit_modules']} Linear4bit modules, "
-        f"{detector_meta['quant_verified']['resident_gb']} GB resident",
-        f"- versions: {json.dumps(detector_meta['versions'])}",
-        f"- gpu: {detector_meta['gpu']} · max_tokens {detector_meta['max_tokens']}",
-        f"- score semantics: {detector_meta['score_semantics']}",
+        *_fingerprint_lines(detector_meta),
         "",
         "## Corpus fingerprint",
         f"- {corpus.name} — sha256 `{corpus.sha256[:16]}…` · counts {corpus.counts}",
@@ -108,5 +152,5 @@ def write_report(
         "## Reproduce",
         f"```\n{reproduce_cmd}\n```",
     ]
-    (outdir / "report.md").write_text("\n".join(lines) + "\n")
+    (outdir / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return outdir / "report.md"
