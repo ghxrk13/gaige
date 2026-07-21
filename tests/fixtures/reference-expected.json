@@ -1,0 +1,32 @@
+{
+ "_what": "Pinned output of the REFERENCE DETECTION INSTRUMENT: HC3-mini n=100 seed=17, Fast-DetectGPT on falcon-7b 4-bit CUDA, measured 2026-07-21. Corpus sha256 7d2819d3e83bd10d...",
+ "_why": "gaige is evolving toward longitudinal drift measurement. This pins the DETECTION workflow so it cannot rot silently while that happens. If these numbers move, the detection analysis path changed - which is either a bug or a deliberate change that must be argued for, never a surprise.",
+ "auroc": 0.972,
+ "auroc_ci": [
+  0.9457875,
+  0.993805
+ ],
+ "n_boot": 1000,
+ "thresholds": [
+  {
+   "target_fpr": 0.01,
+   "threshold": 2.122894287109375,
+   "achieved_fpr": 0.01,
+   "achieved_tpr": 0.86,
+   "tpr_ci": [
+    0.79,
+    0.92
+   ]
+  },
+  {
+   "target_fpr": 0.05,
+   "threshold": 1.8319025039672852,
+   "achieved_fpr": 0.05,
+   "achieved_tpr": 0.91,
+   "tpr_ci": [
+    0.85,
+    0.96
+   ]
+  }
+ ]
+}
