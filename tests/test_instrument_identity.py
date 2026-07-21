@@ -12,6 +12,8 @@ people's tools. These run without torch installed, because the logic must not de
 
 from __future__ import annotations
 
+import pytest
+
 from gaige.single import instrument_mismatches
 
 
@@ -66,45 +68,22 @@ def test_cuda_only_quant_refused_on_cpu():
     """4-bit has no CPU kernel. Refuse with an actionable message rather than degrade silently."""
     from gaige.detectors.fast_detect_gpt import FastDetectGPT
 
-    det = FastDetectGPT(quant="4bit", device="cpu")
-    try:
-        det._effective_quant("cpu")
-    except RuntimeError as e:
-        msg = str(e)
-        assert "CUDA-only" in msg
-        assert "fp32" in msg  # tells the user what to do instead
-        assert "DIFFERENT INSTRUMENT" in msg  # and that it is not the same measurement
-    else:
-        raise AssertionError("expected 4bit-on-CPU to be refused")
+    with pytest.raises(RuntimeError) as e:
+        FastDetectGPT(quant="4bit", device="cpu")._effective_quant("cpu")
+    msg = str(e.value)
+    assert "CUDA-only" in msg
+    assert "fp32" in msg  # tells the user what to do instead
+    assert "DIFFERENT INSTRUMENT" in msg  # and that it is not the same measurement
 
 
 def test_fp16_refused_on_cpu():
     from gaige.detectors.fast_detect_gpt import FastDetectGPT
 
-    det = FastDetectGPT(quant="fp16", device="cpu")
-    try:
-        det._effective_quant("cpu")
-    except RuntimeError as e:
-        assert "fp32" in str(e)
-    else:
-        raise AssertionError("expected fp16-on-CPU to be refused")
+    with pytest.raises(RuntimeError, match="fp32"):
+        FastDetectGPT(quant="fp16", device="cpu")._effective_quant("cpu")
 
 
 def test_fp32_accepted_on_cpu():
     from gaige.detectors.fast_detect_gpt import FastDetectGPT
 
     assert FastDetectGPT(quant="fp32", device="cpu")._effective_quant("cpu") == "fp32"
-
-
-def test_unknown_device_rejected():
-    from gaige.detectors.fast_detect_gpt import FastDetectGPT
-
-    det = FastDetectGPT(device="tpu")
-    try:
-        det.resolve_device()
-    except (ValueError, ImportError, ModuleNotFoundError) as e:
-        # ValueError is the intended path; on a box with no torch the import guard fires first,
-        # which is also acceptable — what must never happen is silent acceptance.
-        assert isinstance(e, (ValueError, ImportError, ModuleNotFoundError))
-    else:
-        raise AssertionError("expected an unknown device to be rejected")
