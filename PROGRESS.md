@@ -12,7 +12,7 @@ flagship-report material for Burst 2 (measured, reproducible, version-pinned).
 
 ## Burst 1 — 2026-07-21
 - Skeleton: corpus loader + HC3 subsample fetcher, Fast-DetectGPT analytic detector w/ quantization VERIFICATION (refuses silent-fp16 loads), ROC/AUROC/threshold-at-FPR + bootstrap CIs, receipts writer, CLI, unit tests.
-- License Apache-2.0 (adoption over copyleft; open-core still possible later).
+- License Apache-2.0 at first commit; **relicensed to AGPL-3.0 + commercial dual-license the same day** after the research showed permissive licensing leaves the code open to vendor wrapping with no return. Clean relicense (sole copyright, zero distribution). Renamed detcal -> gaige same day; trademark policy written.
 - NEXT (Burst 2): run receipts on 2-3 detectors incl. bf16-vs-4bit A/B; flagship report; then Burst 3 = three customer conversations before any more code.
 - Rules: clean-room corpora only; local repo (ghxrk13); GitHub creation goes through the approval queue.
 
