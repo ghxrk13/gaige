@@ -21,8 +21,9 @@ from __future__ import annotations
 
 import re
 import sys
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 HEADER = "# gaige — calibration and drift receipts for AI measurement."
@@ -88,8 +89,16 @@ def check_description_alignment() -> None:
 
 def check_required_docs() -> None:
     """Documents a public repo is judged for having."""
-    for name in ("LICENSE", "README.md", "SECURITY.md", "CONTRIBUTING.md", "COMMERCIAL.md",
-                 "TRADEMARK.md", "NOTICE.md", "PROGRESS.md"):
+    for name in (
+        "LICENSE",
+        "README.md",
+        "SECURITY.md",
+        "CONTRIBUTING.md",
+        "COMMERCIAL.md",
+        "TRADEMARK.md",
+        "NOTICE.md",
+        "PROGRESS.md",
+    ):
         if not (ROOT / name).exists():
             fail(f"missing expected document: {name}")
 

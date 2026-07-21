@@ -165,9 +165,13 @@ def format_result(r: dict) -> str:
             "short are noise-dominated; treat as unreliable in BOTH directions."
         )
     if r["instrument_mismatches"]:
-        lines.append("  WARNING: environment differs from the report's fingerprint — thresholds may not transfer:")
+        lines.append(
+            "  WARNING: environment differs from the report's fingerprint — thresholds may not transfer:"
+        )
         for m in r["instrument_mismatches"]:
             lines.append(f"    - {m}")
-    lines.append(f"  instrument: {r['instrument']['model']} ({r['instrument']['quant']}) calibrated on {r['instrument']['corpus']}")
+    lines.append(
+        f"  instrument: {r['instrument']['model']} ({r['instrument']['quant']}) calibrated on {r['instrument']['corpus']}"
+    )
     lines.append("  note: evidence, not a verdict. Nothing was logged.")
     return "\n".join(lines)

@@ -4,12 +4,12 @@
 
 """gaige CLI.
 
-  gaige run     --corpus hc3-mini --n 100 --detector fast-detect-gpt
-  gaige run     --corpus path/to/labeled.jsonl ...
-  gaige analyze --report reports/<ts>-<detector>/     # re-derive results, no GPU needed
-  gaige analyze --scores path/to/scores.csv
-  gaige score   --report reports/<ts>-<detector>/ --file draft.md
-  gaige corpora
+gaige run     --corpus hc3-mini --n 100 --detector fast-detect-gpt
+gaige run     --corpus path/to/labeled.jsonl ...
+gaige analyze --report reports/<ts>-<detector>/     # re-derive results, no GPU needed
+gaige analyze --scores path/to/scores.csv
+gaige score   --report reports/<ts>-<detector>/ --file draft.md
+gaige corpora
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def cmd_run(args) -> int:
     det = _build_detector(args)
     print(f"[detector] loading {det.name} ({args.model}, {args.quant}, device={args.device})...")
     det.load()
-    print(f"[detector] loaded + quantization verified")
+    print("[detector] loaded + quantization verified")
 
     rows = []
     t_all = time.time()
@@ -82,7 +82,12 @@ def cmd_run(args) -> int:
         t0 = time.time()
         s = det.score(item["text"])
         rows.append(
-            {"id": item["id"], "label": item["label"], "score": s, "seconds": round(time.time() - t0, 3)}
+            {
+                "id": item["id"],
+                "label": item["label"],
+                "score": s,
+                "seconds": round(time.time() - t0, 3),
+            }
         )
         if i % 25 == 0 or i == len(corpus.items):
             print(f"[score] {i}/{len(corpus.items)} ({time.time() - t_all:.0f}s)")
@@ -126,7 +131,9 @@ def cmd_analyze(args) -> int:
 
     n_h = sum(1 for r in rows if r["label"] == "human")
     print(f"[analyze] {origin}")
-    print(f"[analyze] {len(rows)} scores (human {n_h}, ai {len(rows) - n_h}) | corpus {corpus.name}")
+    print(
+        f"[analyze] {len(rows)} scores (human {n_h}, ai {len(rows) - n_h}) | corpus {corpus.name}"
+    )
     if detector_meta.get("instrument_unknown"):
         print(
             "[analyze] WARNING: no instrument fingerprint accompanies these scores. Thresholds "
@@ -137,10 +144,14 @@ def cmd_analyze(args) -> int:
         rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
     )
 
-    outdir = Path(args.out).resolve() if args.out else (
-        src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
-        if src.is_file()
-        else src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
+    outdir = (
+        Path(args.out).resolve()
+        if args.out
+        else (
+            src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
+            if src.is_file()
+            else src.parent / f"{datetime.now():%Y%m%d-%H%M%S}-analyze"
+        )
     )
     reproduce = (
         f"gaige analyze {'--report' if args.report else '--scores'} {src} "
@@ -185,12 +196,23 @@ def main(argv=None) -> int:
     r.add_argument("--n", type=int, default=100, help="per-class sample count for built-in corpora")
     r.add_argument("--seed", type=int, default=17)
     r.add_argument("--detector", default="fast-detect-gpt")
-    r.add_argument("--model", default=None,
-                   help="scoring model; default is chosen per device (see --help output of run)")
-    r.add_argument("--quant", default="4bit", choices=["4bit", "fp16", "fp32"],
-                   help="4bit is CUDA-only; use fp32 on CPU")
-    r.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"],
-                   help="auto prefers CUDA and falls back to CPU, recording the fallback")
+    r.add_argument(
+        "--model",
+        default=None,
+        help="scoring model; default is chosen per device (see --help output of run)",
+    )
+    r.add_argument(
+        "--quant",
+        default="4bit",
+        choices=["4bit", "fp16", "fp32"],
+        help="4bit is CUDA-only; use fp32 on CPU",
+    )
+    r.add_argument(
+        "--device",
+        default="auto",
+        choices=["auto", "cuda", "cpu"],
+        help="auto prefers CUDA and falls back to CPU, recording the fallback",
+    )
     r.add_argument("--max-tokens", type=int, default=1024)
     r.add_argument("--n-boot", type=int, default=1000)
     r.add_argument("--root", default=".", help="project root holding corpora/ and reports/")
@@ -206,7 +228,9 @@ def main(argv=None) -> int:
     a_src.add_argument("--scores", help="a bare scores.csv (columns: label, score[, id, seconds])")
     a.add_argument("--n-boot", type=int, default=1000)
     a.add_argument("--seed", type=int, default=17)
-    a.add_argument("--out", help="output directory (default: a new timestamped dir beside the source)")
+    a.add_argument(
+        "--out", help="output directory (default: a new timestamped dir beside the source)"
+    )
     a.set_defaults(fn=cmd_analyze)
 
     c = sub.add_parser("corpora", help="list built-in corpora")

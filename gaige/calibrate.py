@@ -71,7 +71,9 @@ def threshold_at_fpr(scores: np.ndarray, labels: np.ndarray, target_fpr: float) 
     """
     human, ai = _split(scores, labels)
     best = None
-    for t in sorted(np.unique(scores)):  # ascending: first t meeting target = most sensitive legal threshold
+    for t in sorted(
+        np.unique(scores)
+    ):  # ascending: first t meeting target = most sensitive legal threshold
         f = float((human >= t).mean())
         if f <= target_fpr:
             best = {

@@ -97,9 +97,7 @@ def test_report_written_from_unknown_instrument_says_so(tmp_path):
     rows = synthetic_rows(60)
     results = analyze.compute_results(rows, n_boot=100, seed=3)
     out = tmp_path / "out"
-    write_report(
-        out, analyze.UNKNOWN_CORPUS, dict(analyze.UNKNOWN_DETECTOR), rows, results, "test"
-    )
+    write_report(out, analyze.UNKNOWN_CORPUS, dict(analyze.UNKNOWN_DETECTOR), rows, results, "test")
     text = (out / "report.md").read_text(encoding="utf-8")
     assert "INSTRUMENT UNKNOWN" in text
     assert "not transferable" in text

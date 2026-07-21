@@ -83,9 +83,7 @@ def max_disparity(strata: dict) -> dict:
     out = {}
     for key, values in strata.items():
         fprs = {
-            v: d["fpr"]
-            for v, d in values.items()
-            if d["fpr"] is not None and not d["suppressed"]
+            v: d["fpr"] for v, d in values.items() if d["fpr"] is not None and not d["suppressed"]
         }
         if len(fprs) < 2:
             out[key] = None

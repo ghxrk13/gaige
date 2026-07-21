@@ -145,7 +145,7 @@ def compute_results(
         row["tpr_ci"] = calibrate.bootstrap_ci(
             scores,
             labels,
-            lambda s, l, thr=thr: float((s[l == "ai"] >= thr).mean()),
+            lambda s, lb, thr=thr: float((s[lb == "ai"] >= thr).mean()),
             n_boot=n_boot,
             seed=seed,
         )
