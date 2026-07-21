@@ -1,0 +1,51 @@
+# Pre-commit hooks for gaige.
+#
+# These are the same gates CI runs, moved earlier. The point is not redundancy: a failure caught
+# here costs seconds, the identical failure caught in CI costs a push, a wait, and a context
+# switch — and this repo has already shipped one commit that could not pass its own lint job.
+#
+# Install once per clone:
+#     pip install pre-commit && pre-commit install
+# Run over everything without committing:
+#     pre-commit run --all-files
+# Skip deliberately (rare, and say why in the commit message):
+#     git commit --no-verify
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        # Corpora and model weights do not belong in git. Report fixtures are small on purpose.
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        # CI runs on Linux and Windows; LF everywhere keeps diffs honest.
+        args: [--fix=lf]
+
+  - repo: local
+    hooks:
+      - id: gaige-consistency
+        name: gaige identity drift check
+        entry: python tools/check_consistency.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: gaige-tests
+        name: pytest
+        entry: python -m pytest tests/ -q
+        language: system
+        pass_filenames: false
+        always_run: true
