@@ -1,24 +1,37 @@
 # gaige
 
-**Calibration + receipts for AI-text detectors.** Your corpus, your thresholds, honest error
-bars — instead of a vendor's black-box score.
+**Calibration and drift receipts for AI measurement.** Your corpus, your thresholds, honest
+error bars — and a fingerprint that proves the instrument hasn't changed underneath you.
 
 ## Why
 
-Every deployed AI-text detector is an *instrument*: its numbers depend on the model, the
-quantization, the library versions, and the kind of text it reads. Almost nobody who uses
-one knows their actual false-positive rate on their own material — they trust a marketing
-page. When the accusation lands on a real person, "the tool said 87%" is not evidence.
+Any score you act on comes from an *instrument*, and that instrument's numbers depend on the
+model, the quantization, the device, the library versions, and the material it reads. Change
+any of those and you have a different instrument — whether or not anyone noticed. Almost
+nobody who relies on a score knows its actual error rate on their own material; they trust a
+marketing page. When the consequence lands on a real person, "the tool said 87%" is not
+evidence.
 
-gaige takes a labeled corpus (known-human + known-AI text) and any pluggable detector, and
-emits a **receipts report**: ROC + AUROC with bootstrap confidence intervals, operating
-thresholds at target false-positive rates with *achieved* (measured) rates, and a complete
-instrument fingerprint — model, quantization **verified at load time** (some library combos
-silently ignore 4-bit and load fp16, which shifts scores; gaige refuses to emit numbers
-from a load it can't prove), versions, GPU, corpus hash, and the exact reproduce command.
+gaige takes a corpus or probe set and any pluggable scorer, and emits a **receipts report**:
+ROC + AUROC with bootstrap confidence intervals, operating thresholds at target false-positive
+rates with *achieved* (measured) rates, and a complete instrument fingerprint — model,
+quantization **verified at load time** (some library combos silently ignore 4-bit and load
+fp16, which shifts scores; gaige refuses to emit numbers from a load it can't prove), device,
+versions, corpus hash, and the exact reproduce command.
 
-If you use a detector: know its error bars on text like yours before you act on it.
-If you're judged by one: these receipts are what an auditable process looks like.
+**Two applications of one machine:**
+
+- **Detector calibration** — what is this detector's real false-positive rate on *your*
+  material, rather than on a vendor's marketing page. If you use a detector: know its error
+  bars before you act. If you are judged by one: these receipts are what an auditable process
+  looks like.
+- **Instrument drift** — has the system you're measuring changed, or has your measuring
+  pipeline? Distinguishing those two is the difference between a finding and an artifact, and
+  it is the harder question. gaige is built to answer it with evidence rather than assertion.
+
+Scoring needs a model and ideally a GPU. **Analysis does not** — `gaige analyze` re-derives
+thresholds and reports from scores that already exist, so calibration runs on a laptop, or a
+CPU-only machine, or an isolated environment with no accelerator at all.
 
 ## Quickstart
 
