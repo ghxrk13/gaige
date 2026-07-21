@@ -103,20 +103,29 @@ def version_mismatches(env: dict) -> list[str]:
     return instrument_mismatches(env)
 
 
-def score_document(report_dir: Path, text: str) -> dict:
+def score_document(report_dir: Path, text: str, detector=None) -> dict:
+    """Score one document against a calibrated report.
+
+    `detector` exists so this function can be tested without a GPU, and specifically so the
+    no-persistence claim in SECURITY.md can be VERIFIED rather than asserted. A security
+    property nobody can test is a promise, and this project does not trade in promises.
+    Passing None keeps the production path: build the instrument the report describes.
+    """
     inst = load_instrument(report_dir)
     det_meta = inst["env"]["detector"]
 
     mismatches = instrument_mismatches(inst["env"])
 
-    from .detectors.fast_detect_gpt import FastDetectGPT
+    det = detector
+    if det is None:
+        from .detectors.fast_detect_gpt import FastDetectGPT
 
-    det = FastDetectGPT(
-        model_id=det_meta["model_id"],
-        quant=det_meta["quant_requested"],
-        max_tokens=det_meta["max_tokens"],
-    )
-    det.load()
+        det = FastDetectGPT(
+            model_id=det_meta["model_id"],
+            quant=det_meta["quant_requested"],
+            max_tokens=det_meta["max_tokens"],
+        )
+        det.load()
     score = det.score(text)
 
     n_words = len(text.split())
