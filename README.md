@@ -50,14 +50,21 @@ gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"
 
 ## Status / roadmap
 
-v0.0.1 (burst 1): Fast-DetectGPT (analytic single-model) · HC3 subsample corpus · ROC/AUROC/
-threshold receipts with bootstrap CIs · quantization verification.
+v0.0.1 (bursts 1-2a): Fast-DetectGPT (analytic single-model) · HC3 subsample corpus · ROC/AUROC/
+threshold receipts with bootstrap CIs · quantization verification · CPU support + `gaige analyze`
+replay · resumable scoring · **conformal thresholds** (split conformal per arXiv:2505.05084;
+finite-sample bound P(human flagged) ≤ α, stated honestly: marginal over calibration draws, with
+the exact conditional Beta dispersion printed beside it) · **subgroup-stratified receipts**
+(length buckets always, metadata axes when the corpus carries them; every rate with a bootstrap
+interval, rates on fewer than 20 samples withheld — counts speak instead) · **base-rate
+arithmetic in every report** (FPR × your volume = wrongly flagged per year, plus PPV at assumed
+prevalences — the calculation Vanderbilt published when it disabled its detector).
 
-Next (research-ranked — see PROGRESS.md): conformal FPR-bounded thresholds · subgroup-stratified
-receipts (length and style; the disparities that produce real false accusations) · Binoculars as
-detector #2 · quantization A/B receipts (bf16 vs 4-bit — measured, not assumed) · adversarial
-degradation panels · RAID/TH-Bench corpus adapters · watermark-verifier adapter · base-rate
-harm calculator · drift canaries (does your instrument still measure what it measured last term?).
+Next (research-ranked — see PROGRESS.md): Binoculars as detector #2 · quantization A/B receipts
+(bf16 vs 4-bit — measured, not assumed) · per-subgroup conformal thresholds (Mondrian; the
+guarantee-backed version of group-adaptive thresholding, needs larger calibration sets) ·
+adversarial degradation panels · RAID/TH-Bench corpus adapters · watermark-verifier adapter ·
+drift canaries (does your instrument still measure what it measured last term?).
 
 ## Licensing and the name
 

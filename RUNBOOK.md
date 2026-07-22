@@ -20,7 +20,7 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 **bench (the reference environment — do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
-./.venv/bin/python -m pytest tests/ -q          # expect: 34 passed
+./.venv/bin/python -m pytest tests/ -q          # expect: 64 passed
 ```
 The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13.0 / py 3.12.3.
 **transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
@@ -30,7 +30,7 @@ fp16, which changes scores. gaige refuses such a load, but the pin avoids the fi
 ```
 cd %USERPROFILE%\personal\gaige
 python -m pip install -e .
-python -m pytest tests/ -q                      # expect: 34 passed
+python -m pytest tests/ -q                      # expect: 64 passed
 ```
 
 ## 2. Workflow A — calibrate a detector, then score documents
@@ -46,15 +46,26 @@ so it cannot rot while other capabilities get built.
     --detector fast-detect-gpt --model tiiuae/falcon-7b --quant 4bit --device cuda
 ```
 
-**Correct output ends with:**
+**Correct output ends with (measured 2026-07-22 on the pinned env):**
 ```
 [receipt] reports/<timestamp>-fast-detect-gpt/report.md
 [receipt] AUROC 0.9720 (CI 0.9458-0.9938)
-[receipt] @FPR<=1%: thr=2.1229 achievedFPR=1.000% TPR=86.0%
-[receipt] @FPR<=5%: thr=1.8319 achievedFPR=5.000% TPR=91.0%
+[receipt] @FPR<=1%: thr=2.1229 FPRcal=1.000% (in-sample) TPR=86.0%
+[receipt] @FPR<=5%: thr=1.8319 FPRcal=5.000% (in-sample) TPR=91.0%
+[receipt] conformal a=0.05: thr=1.8468 TPR=90.0% (marginal FPR guarantee <= 0.05)
+[receipt] conformal a=0.01: thr=2.4446 TPR=76.0% (marginal FPR guarantee <= 0.01)
+[receipt] conformal a=0.005: refused (alpha=0.005 needs >= 199 human calibration samples, got 100. ...)
 ```
 Those exact numbers are the reference. **If they differ, something about the instrument changed** —
 check the fingerprint section of `report.md` before trusting anything downstream.
+
+Read the two threshold families as: `FPRcal` rows are fitted on this sample (in-sample, no
+guarantee); `conformal` rows carry a finite-sample guarantee that is **marginal over calibration
+draws** — note the α=0.01 conformal threshold is deliberately stricter (2.4446 vs 2.1229) and
+catches less (76% vs 86%): that gap is the price of an actual guarantee. The α=0.005 refusal at
+n=100 is correct behavior, not an error. `report.md` also now carries per-subgroup rate tables
+(rates below n=20 per class are withheld — counts speak instead) and a base-rate section
+(`--harm-volume` sets your institution's yearly volume; default is Vanderbilt's published 75,000).
 
 **No GPU?** It still works, with a smaller model:
 ```bash
@@ -105,7 +116,7 @@ what is HAVE / PLANNED / GAP. Do not assume any of it works because this file me
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 34 passed
+python -m pytest tests/ -q          # 64 passed
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/
@@ -121,8 +132,10 @@ All four also run in CI on Linux and Windows across Python 3.10/3.12/3.13.
 - **4-bit on CPU is impossible** (bitsandbytes has no CPU kernel). gaige refuses and tells you to
   use `--quant fp32` with a smaller model.
 - **A 7B model on CPU is ~20-36 s/sample** — about two hours for 200 samples. Use a small model.
-- **`run` writes scores only at the end.** A long run that dies loses everything. Resumability is
-  not built yet; keep corpora small on CPU.
+- **A run that dies mid-way resumes.** Scores are flushed to disk per sample; continue with
+  `gaige run ... --resume reports/<dir>` (same corpus + instrument, or it refuses — resuming
+  across an instrument change would interleave two instruments into one report). Verified:
+  SIGKILL at 185/300, resumed, bit-identical to the uninterrupted run.
 - **A co-resident production scorer shares the bench's GPU.** It is the live submission gate — do not run
   heavy GPU work during a production deadline window.
 - **Corpus labels are trusted.** gaige validates the *shape* of a corpus, never the correctness of

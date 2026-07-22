@@ -39,6 +39,34 @@ first real release is staged in `pypi-stub/`.
   traps that have actually bitten.
 - Tests: 6 → 47. Including the pinned reference detection instrument (AUROC 0.9720 and both
   thresholds, exact, no GPU needed) so detection cannot rot while other capabilities are built.
+- **Conformal thresholds, wired into every report** (2026-07-22, after adversarial review
+  against arXiv:2505.05084 — review of record:
+  `private-notes/research/conformal-subgroups-review-2026-07-22.md`). Split-conformal order
+  statistic verified against the paper's construction (quantile, strict-inequality flag rule,
+  minimum-n bound, all exact). The report states the guarantee as it is: **marginal over
+  calibration draws, under exchangeability** — and prints the exact conditional dispersion
+  (Beta(n+1−k, k) mean ± sd) instead of any in-sample "achieved" rate, which was removed as
+  vacuous ((n−k)/n by construction). `gaige score` gains guarantee-backed conformal verdicts.
+- **Subgroup-stratified receipts, wired into every report** (same review). Length buckets
+  always; metadata axes when the corpus carries them on every row. Every reported rate now
+  carries a 95% bootstrap interval (reusing `calibrate.bootstrap_ci`, generalized to
+  single-class resampling with a bit-identical RNG path for existing two-class calls). The
+  n<20 floor now actually WITHHOLDS rates (count shown) instead of printing them with a flag.
+  Max-disparity line = FairOPT's Δ_FPR (arXiv:2502.04528 Eq. 8), so the number is comparable
+  to the literature.
+- **Base-rate arithmetic in every report**: FPR × volume = expected wrongly flagged per year
+  (`--harm-volume`, default Vanderbilt's published 75,000), plus PPV at illustrative
+  prevalences. The previously dead `base_rate_harm`/`ppv` are now wired; `base_rate_harm`
+  lost a dangling `ai_prevalence` parameter that did nothing.
+- **scores.csv gains `n_words` and `meta` columns** (derived count + corpus metadata — never
+  text), so `gaige analyze` can replay subgroup receipts. Old score sets and partials are
+  read tolerantly; their reports say subgroup receipts are unavailable rather than guessing.
+- Tests: 47 → 64. The conformal tests assert the STATISTICAL PROPERTY by simulation
+  (marginal bound across alphas, conditional-dispersion match to the Beta law, refusal
+  boundaries) and their teeth are proven: a deliberately broken order statistic turns the
+  suite red (recorded in the review doc), and an in-suite test demonstrates the detection
+  margin permanently. Subgroup tests inject a KNOWN length disparity and require the
+  interval to bracket the injected truth, and the refusal floor to actually refuse.
 
 ### Changed
 
@@ -75,8 +103,9 @@ first real release is staged in `pypi-stub/`.
 
 ### Known limitations
 
-- `conformal.py` and `subgroups.py` are implemented but **unwired and untested** — they reach no
-  report. Scheduled for adversarial review before being wired.
+- Group-adaptive thresholds ship as REPORTING (per-subgroup rates with intervals), not as
+  per-group thresholds. The guarantee-backed version (Mondrian conformal per bucket) needs
+  ≥99 human samples per bucket at α=0.01 and is deliberately deferred rather than half-built.
 - Longitudinal drift measurement (run registry, probe runner, ECE, Page-Hinkley/CUSUM) is **not
   built**. See `private-notes/longitudinal study-requirements-trace.md` for what is HAVE / PLANNED / GAP.
 
