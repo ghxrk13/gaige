@@ -23,9 +23,12 @@ from pathlib import Path
 
 import numpy as np
 
-from . import __version__, calibrate
+from . import __version__, calibrate, conformal, subgroups
 
 TARGET_FPRS = (0.01, 0.05)
+CONFORMAL_ALPHAS = (0.05, 0.01, 0.005)
+HARM_VOLUME_DEFAULT = 75000  # Vanderbilt's published annual submission volume
+PPV_PREVALENCES = (0.01, 0.10, 0.50)
 
 
 class NotAReport(ValueError):
@@ -86,14 +89,24 @@ def read_scores_csv(path: Path) -> list[dict]:
                 raise NotAReport(
                     f"{path} row {i + 1}: label must be 'human' or 'ai', got {label!r}"
                 )
-            rows.append(
-                {
-                    "id": row.get("id") or f"row{i}",
-                    "label": label,
-                    "score": float(row["score"]),
-                    "seconds": float(row["seconds"]) if row.get("seconds") else "",
-                }
-            )
+            out = {
+                "id": row.get("id") or f"row{i}",
+                "label": label,
+                "score": float(row["score"]),
+                "seconds": float(row["seconds"]) if row.get("seconds") else "",
+            }
+            # Optional columns: derived word count + corpus metadata (for subgroup
+            # receipts). Older score sets simply lack them; the report then says so.
+            nw = row.get("n_words")
+            if nw not in (None, ""):
+                out["n_words"] = int(float(nw))
+            m = row.get("meta")
+            if m:
+                try:
+                    out["meta"] = json.loads(m)
+                except ValueError:
+                    pass
+            rows.append(out)
     if not rows:
         raise NotAReport(f"{path}: no score rows found")
     return rows
@@ -126,11 +139,14 @@ def compute_results(
     target_fprs: tuple[float, ...] = TARGET_FPRS,
     n_boot: int = 1000,
     seed: int = 17,
+    harm_volume: int = HARM_VOLUME_DEFAULT,
 ) -> dict:
-    """Scores -> AUROC, thresholds at target FPRs, bootstrap CIs, ROC sweep.
+    """Scores -> AUROC, thresholds, conformal table, subgroup rates, base-rate arithmetic.
 
     The single shared path for `run` and `analyze`. Keep it that way: two code paths that
     compute the same statistic will eventually disagree, and this is the number people act on.
+    Everything here is deterministic given (rows, n_boot, seed), which is what keeps the
+    replay round-trip byte-identical.
     """
     scores = np.array([r["score"] for r in rows], dtype=np.float64)
     labels = np.array([r["label"] for r in rows])
@@ -151,11 +167,72 @@ def compute_results(
         )
         thresholds.append(row)
 
+    conformal_rows = conformal.conformal_table(
+        scores[labels == "human"], scores[labels == "ai"], CONFORMAL_ALPHAS
+    )
+
+    if all(isinstance(r.get("n_words"), int) for r in rows):
+        sub_rows = [
+            {
+                "label": r["label"],
+                "score": r["score"],
+                "n_words": r["n_words"],
+                "meta": r.get("meta"),
+            }
+            for r in rows
+        ]
+        by_threshold = []
+        for row in thresholds:
+            strata = subgroups.stratified_rates(
+                sub_rows, row["threshold"], n_boot=n_boot, seed=seed
+            )
+            by_threshold.append(
+                {
+                    "target_fpr": row["target_fpr"],
+                    "threshold": row["threshold"],
+                    "strata": strata,
+                    "max_fpr_disparity": subgroups.max_disparity(strata),
+                }
+            )
+        subgroups_block: dict = {
+            "min_subgroup": subgroups.MIN_SUBGROUP,
+            "by_threshold": by_threshold,
+        }
+    else:
+        subgroups_block = {
+            "unavailable": "n_words was not recorded with these scores (older report or bare "
+            "scores.csv); re-score, or supply an n_words column, to get subgroup receipts"
+        }
+
+    base_rate = {
+        "volume": harm_volume,
+        "volume_note": "default is Vanderbilt's published 75,000 submissions/year",
+        "at": [
+            {
+                "target_fpr": row["target_fpr"],
+                "expected_false_positives": subgroups.base_rate_harm(
+                    row["target_fpr"], harm_volume
+                )["expected_false_positives"],
+                "ppv_at_prevalence": [
+                    {
+                        "prevalence": p,
+                        "ppv": subgroups.ppv(row["target_fpr"], row["achieved_tpr"], p),
+                    }
+                    for p in PPV_PREVALENCES
+                ],
+            }
+            for row in thresholds
+        ],
+    }
+
     return {
         "gaige_version": __version__,
         "auroc": auroc,
         "auroc_ci": auroc_ci,
         "thresholds": thresholds,
+        "conformal": conformal_rows,
+        "subgroups": subgroups_block,
+        "base_rate": base_rate,
         "roc": calibrate.roc_points(scores, labels),
         "n_boot": n_boot,
     }
