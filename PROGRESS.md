@@ -1,5 +1,39 @@
 # PROGRESS — gaige (yoto pattern)
 
+## 2026-07-22 — the statistical core: reviewed, fixed, wired, and property-tested
+
+**The adversarial review happened before the wiring**, in writing
+(`private-notes/research/conformal-subgroups-review-2026-07-22.md`), against the actual papers.
+`conformal.py`'s construction verified exact against Wang arXiv:2505.05084 (quantile, strict
+flag rule, minimum-n bound — no off-by-one). Two things it *said* were wrong and now aren't:
+the "empirical_fpr" it returned was (n−k)/n by construction — a function of n and α dressed
+as a measurement — and is gone; and the guarantee now states what it is, **marginal over
+calibration draws**, with the exact conditional dispersion (Beta(n+1−k, k) mean ± sd) printed
+beside it. `subgroups.py`'s floor claimed to refuse and didn't; it now withholds rates below
+n=20 (counts speak), and every reported rate carries a bootstrap interval.
+
+**Wired into the ONE shared path** (`compute_results`), so `run` and `analyze` both emit the
+conformal table, per-subgroup tables, and base-rate arithmetic in every report — replay
+verified **bit-identical** on the reference receipt. scores.csv grew `n_words`/`meta`
+(derived data only, never text; the privacy tests still pass), old score sets degrade
+honestly ("subgroup receipts unavailable"), old partials still resume.
+
+**Tests 47 → 64, and the new ones assert the property, not execution**: simulated marginal
+coverage across alphas, conditional dispersion recovered from simulation matching the Beta
+law, refusal boundaries exact. Teeth proven: breaking the order statistic by one rank turned
+the suite red (2 failed) before reverting — recorded in the review doc.
+
+**Reference receipt re-measured, unchanged**: AUROC 0.9720 (CI 0.9458–0.9938), thr@1% 2.1229,
+corpus sha256 7d2819d3…, 128 Linear4bit / 4.04 GB verified. New alongside it: conformal
+α=0.05 → 1.8468 (TPR 90%), α=0.01 → **2.4446 (TPR 76%)** vs the in-sample 2.1229 (86%) — the
+measured price of an actual guarantee — and α=0.005 refused at n=100, correctly. First real
+subgroup finding on our own corpus: short-text FPR 4.8% vs 2.6% at the 5% point, the
+literature's direction, now with intervals.
+
+**Deferred deliberately**: group-adaptive thresholds. The honest version is per-bucket
+(Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
+needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
+
 ## 2026-07-21 evening — runs without a GPU; identity is now enforced, not asserted
 
 **Redefined.** "Calibration + receipts for AI-text detectors" was accurate while text detection
