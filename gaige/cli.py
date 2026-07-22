@@ -9,6 +9,9 @@ gaige run     --corpus path/to/labeled.jsonl ...
 gaige analyze --report reports/<ts>-<detector>/     # re-derive results, no GPU needed
 gaige analyze --scores path/to/scores.csv
 gaige score   --report reports/<ts>-<detector>/ --file draft.md
+gaige probe run --probes probes.jsonl --provider local-hf --model gpt2-large --cutoff 2024-06-01
+gaige providers
+gaige test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
 gaige corpora
 """
 
@@ -229,6 +232,127 @@ def cmd_corpora(_args) -> int:
     return 0
 
 
+def _build_provider(args):
+    import os
+
+    if args.provider == "local-hf":
+        from .providers.local_hf import LocalHF
+
+        if not args.model:
+            raise SystemExit("--model is required with --provider local-hf")
+        return LocalHF(model_id=args.model, dtype=args.dtype, device=args.device)
+    if args.provider == "llamacpp":
+        from .providers.llamacpp import LlamaCpp
+
+        endpoint = args.endpoint or os.environ.get("GAIGE_AI_ENDPOINT")
+        if not endpoint:
+            raise SystemExit(
+                "--endpoint (or GAIGE_AI_ENDPOINT) is required with --provider llamacpp"
+            )
+        return LlamaCpp(
+            endpoint=endpoint,
+            model=args.model or os.environ.get("GAIGE_AI_MODEL", ""),
+            gguf_path=args.gguf,
+        )
+    raise SystemExit(f"unknown provider: {args.provider}")
+
+
+def cmd_probe_run(args) -> int:
+    from datetime import datetime as _dt
+
+    from .proberun import run_probes
+    from .probes import load_probes
+    from .providers.base import Decoding, require_local_or_optin
+
+    probeset = load_probes(Path(args.probes))
+    print(f"[probes] {probeset.name} vintages={probeset.vintages} sha256={probeset.sha256[:16]}...")
+    provider = _build_provider(args)
+    require_local_or_optin(provider, args.allow_remote_text)
+    decoding = Decoding(
+        temperature=args.temperature,
+        top_p=args.top_p,
+        top_k=args.top_k,
+        seed=args.gen_seed,
+        max_new_tokens=args.max_new_tokens,
+    )
+    print(f"[provider] loading {args.provider}...")
+    meta = provider.metadata()  # triggers load/connect; resolves device + attestation
+    print(f"[provider] ready · attestation: {meta.get('attestation', '?')}")
+
+    resolved_bits = ""
+    if args.provider == "local-hf":
+        resolved_bits = f" --model {args.model} --dtype {args.dtype} --device {meta['device']}"
+    elif args.provider == "llamacpp":
+        resolved_bits = f" --endpoint {provider.endpoint}" + (
+            f" --gguf {args.gguf}" if args.gguf else ""
+        )
+    reproduce = (
+        f"gaige probe run --probes {args.probes} --provider {args.provider}{resolved_bits} "
+        f"--cutoff {args.cutoff} --temperature {args.temperature:g} "
+        f"--max-new-tokens {args.max_new_tokens} --n-boot {args.n_boot} --seed {args.seed}"
+    )
+
+    outdir = (
+        Path(args.resume).resolve()
+        if args.resume
+        else Path(args.root).resolve() / "reports" / f"{_dt.now():%Y%m%d-%H%M%S}-probes"
+    )
+    results = run_probes(
+        probeset,
+        provider,
+        decoding,
+        cutoff=args.cutoff,
+        outdir=outdir,
+        n_boot=args.n_boot,
+        seed=args.seed,
+        resume=bool(args.resume),
+        reproduce_cmd=reproduce,
+    )
+    print(f"\n[receipt] {outdir / 'report.md'}")
+    for v, d in sorted(results["by_vintage"].items()):
+        ci = d.get("accuracy_ci")
+        ci_s = f" (CI {ci[0]:.1%}-{ci[1]:.1%})" if ci else ""
+        print(f"[receipt] vintage {v}: accuracy {d['accuracy']:.1%} n={d['n']}{ci_s}")
+    for v, d in sorted(results["post_cutoff_share"].items()):
+        print(f"[receipt] vintage {v}: post-cutoff {d['post_cutoff']}/{d['n']} ({d['share']:.0%})")
+    return 0
+
+
+def cmd_providers(_args) -> int:
+    import os
+
+    print("local-hf    in-process transformers load; attestation: verified")
+    print("llamacpp    llama.cpp server via /v1; attestation graded: verified (with --gguf")
+    print("            hash match) / self-reported (/props answers) / opaque")
+    for var in ("GAIGE_AI_ENDPOINT", "GAIGE_AI_MODEL"):
+        val = os.environ.get(var)
+        print(f"{var}={val}" if val else f"{var} (unset)")
+    return 0
+
+
+def cmd_test_connection(args) -> int:
+    import os
+    import time as _time
+
+    from .providers.base import Decoding
+    from .providers.llamacpp import LlamaCpp
+
+    endpoint = args.endpoint or os.environ.get("GAIGE_AI_ENDPOINT")
+    if not endpoint:
+        raise SystemExit("--endpoint (or GAIGE_AI_ENDPOINT) is required")
+    p = LlamaCpp(endpoint=endpoint, gguf_path=args.gguf)
+    ident = p.connect()
+    print(f"[connect] {endpoint}")
+    print(f"[connect] attestation: {ident['attestation']} — {ident['attestation_basis']}")
+    for k in ("server_model_path", "build_info", "artifact_sha256"):
+        if ident.get(k):
+            print(f"[connect] {k}: {str(ident[k])[:72]}")
+    t0 = _time.time()
+    out = p.complete("2+2=", Decoding(max_new_tokens=8))
+    print(f"[connect] completion probe ok ({_time.time() - t0:.1f}s): {out.strip()[:40]!r}")
+    return 0
+
+
 def cmd_score(args) -> int:
     import json as _json
 
@@ -314,6 +438,62 @@ def main(argv=None) -> int:
 
     c = sub.add_parser("corpora", help="list built-in corpora")
     c.set_defaults(fn=cmd_corpora)
+
+    pr = sub.add_parser("probe", help="probe runner: dated probes -> answers -> graded receipt")
+    pr_sub = pr.add_subparsers(dest="probe_cmd", required=True)
+    prr = pr_sub.add_parser(
+        "run",
+        help="run a probe set against a model provider and emit an accuracy-by-vintage receipt",
+    )
+    prr.add_argument("--probes", required=True, help="probe-set JSONL (see gaige/probes.py schema)")
+    prr.add_argument(
+        "--provider",
+        default="local-hf",
+        choices=["local-hf", "llamacpp"],
+        help="local-hf = in-process (attestation verified); llamacpp = server via /v1",
+    )
+    prr.add_argument("--model", default=None, help="model id (local-hf) or served name (llamacpp)")
+    prr.add_argument("--dtype", default="fp32", choices=["fp32", "fp16"])
+    prr.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
+    prr.add_argument("--endpoint", default=None, help="llamacpp server URL (or GAIGE_AI_ENDPOINT)")
+    prr.add_argument("--gguf", default=None, help="local GGUF path; enables verified attestation")
+    prr.add_argument(
+        "--cutoff",
+        required=True,
+        help="model training cutoff (YYYY-MM-DD); receipts print per-vintage post-cutoff share",
+    )
+    prr.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="0.0 = greedy, the pre-registered study default",
+    )
+    prr.add_argument("--top-p", type=float, default=1.0)
+    prr.add_argument("--top-k", type=int, default=0)
+    prr.add_argument(
+        "--gen-seed", type=int, default=None, help="sampling seed (ignored at temperature 0)"
+    )
+    prr.add_argument("--max-new-tokens", type=int, default=64)
+    prr.add_argument("--n-boot", type=int, default=1000)
+    prr.add_argument("--seed", type=int, default=17, help="bootstrap seed")
+    prr.add_argument("--root", default=".", help="project root holding reports/")
+    prr.add_argument("--resume", help="continue an interrupted probe run directory")
+    prr.add_argument(
+        "--allow-remote-text",
+        action="store_true",
+        help="explicit opt-in to send prompts to a NON-local endpoint; never the default",
+    )
+    prr.set_defaults(fn=cmd_probe_run)
+
+    pv = sub.add_parser("providers", help="list model providers and environment configuration")
+    pv.set_defaults(fn=cmd_providers)
+
+    tc = sub.add_parser(
+        "test-connection", help="prove a llamacpp endpoint answers BEFORE a long run"
+    )
+    tc.add_argument("--endpoint", default=None, help="server URL (or GAIGE_AI_ENDPOINT)")
+    tc.add_argument("--gguf", default=None, help="local GGUF path to attest against")
+    tc.set_defaults(fn=cmd_test_connection)
 
     s = sub.add_parser(
         "score",

@@ -41,12 +41,18 @@ class ResumeRefused(RuntimeError):
     """The run on disk was not produced by the instrument now in hand."""
 
 
-def write_runstate(outdir: Path, corpus, detector_meta: dict, reproduce_cmd: str) -> None:
-    """Record what this run IS, before any scoring, so a resume can be checked against it."""
+def write_runstate(
+    outdir: Path, corpus, detector_meta: dict, reproduce_cmd: str, pinned: tuple = PINNED
+) -> None:
+    """Record what this run IS, before any scoring, so a resume can be checked against it.
+
+    `pinned` parametrizes which fingerprint fields must not change mid-run; the default is
+    the detector set, the probe runner passes its own (provider + decoding + grading).
+    """
     outdir.mkdir(parents=True, exist_ok=True)
     state = {
         "corpus": {"name": corpus.name, "sha256": corpus.sha256, "counts": corpus.counts},
-        "detector": {k: detector_meta.get(k) for k in PINNED},
+        "detector": {k: detector_meta.get(k) for k in pinned},
         "reproduce": reproduce_cmd,
         "complete": False,
     }
@@ -87,7 +93,7 @@ def check_args_match(state: dict, corpus, model_id: str, quant: str, max_tokens:
         raise ResumeRefused(_refusal("before loading the model", problems))
 
 
-def check_instrument_match(state: dict, detector_meta: dict) -> None:
+def check_instrument_match(state: dict, detector_meta: dict, pinned: tuple = PINNED) -> None:
     """Post-load check: the full fingerprint, including library versions and resolved device.
 
     This is the one that catches an environment that drifted between the two halves of a run —
@@ -95,7 +101,7 @@ def check_instrument_match(state: dict, detector_meta: dict) -> None:
     """
     stored = state.get("detector", {})
     problems = []
-    for key in PINNED:
+    for key in pinned:
         was, now = stored.get(key), detector_meta.get(key)
         if was is not None and was != now:
             problems.append(f"{key}: run was {was!r}, now {now!r}")
@@ -136,17 +142,18 @@ def load_partial(outdir: Path) -> list[dict]:
     return rows
 
 
-def open_partial(outdir: Path):
+def open_partial(outdir: Path, fields_override: list[str] | None = None):
     """Append-mode handle, writing the header only for a new file.
 
     Appending to a partial from an older gaige keeps THAT file's column set (a CSV whose
     later rows are wider than its header is corrupt); extra keys on the row dict are
-    ignored rather than fatal. New files get the current schema.
+    ignored rather than fatal. New files get the current schema (`fields_override` lets the
+    probe runner reuse this crash-safety with its own columns).
     """
     outdir.mkdir(parents=True, exist_ok=True)
     p = outdir / PARTIAL
     new = not p.exists() or p.stat().st_size == 0
-    fields = FIELDS
+    fields = fields_override or FIELDS
     if not new:
         with open(p, newline="", encoding="utf-8") as f:
             existing = next(csv.reader(f), None)
