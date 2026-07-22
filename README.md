@@ -13,8 +13,10 @@ marketing page. When the consequence lands on a real person, "the tool said 87%"
 evidence.
 
 gaige takes a corpus or probe set and any pluggable scorer, and emits a **receipts report**:
-ROC + AUROC with bootstrap confidence intervals, operating thresholds at target false-positive
-rates with *achieved* (measured) rates, and a complete instrument fingerprint — model,
+ROC + AUROC with bootstrap confidence intervals, operating thresholds two ways — empirical
+(target FPR with the in-sample rate labeled as exactly that) and conformal (a finite-sample
+guarantee, stated honestly as marginal) — per-subgroup error rates with intervals, base-rate
+harm arithmetic, and a complete instrument fingerprint — model,
 quantization **verified at load time** (some library combos silently ignore 4-bit and load
 fp16, which shifts scores; gaige refuses to emit numbers from a load it can't prove), device,
 versions, corpus hash, and the exact reproduce command.
