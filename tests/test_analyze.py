@@ -103,6 +103,62 @@ def test_report_written_from_unknown_instrument_says_so(tmp_path):
     assert "not transferable" in text
 
 
+def write_scores_v2(path, rows):
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["id", "label", "score", "seconds", "n_words", "meta"])
+        w.writeheader()
+        w.writerows(rows)
+    return path
+
+
+def synthetic_rows_with_words(n=120):
+    rows = []
+    for i in range(n):
+        rows.append(
+            {
+                "id": f"h{i}",
+                "label": "human",
+                "score": -1.0 + i * 0.01,
+                "seconds": 0.1,
+                "n_words": 60 if i % 2 else 400,
+                "meta": "",
+            }
+        )
+    for i in range(n):
+        rows.append(
+            {
+                "id": f"a{i}",
+                "label": "ai",
+                "score": 1.0 + i * 0.01,
+                "seconds": 0.1,
+                "n_words": 60 if i % 2 else 400,
+                "meta": "",
+            }
+        )
+    return rows
+
+
+def test_results_carry_conformal_subgroups_base_rate(tmp_path):
+    p = write_scores_v2(tmp_path / "scores.csv", synthetic_rows_with_words())
+    rows = analyze.read_scores_csv(p)
+    assert all(isinstance(r["n_words"], int) for r in rows)
+    res = analyze.compute_results(rows, n_boot=100, seed=7)
+    by_alpha = {r["alpha"]: r for r in res["conformal"]}
+    assert "threshold" in by_alpha[0.05]  # 120 humans support alpha=0.05 and 0.01
+    assert "threshold" in by_alpha[0.01]
+    strata = res["subgroups"]["by_threshold"][0]["strata"]["length_bucket"]
+    assert set(strata) == {"0-100w", "250-500w"}
+    assert res["base_rate"]["at"][0]["expected_false_positives"] == pytest.approx(0.01 * 75000)
+
+
+def test_rows_without_n_words_get_honest_unavailable(tmp_path):
+    """Old score sets lack the n_words column; the subgroup block must say so, not guess."""
+    p = write_scores(tmp_path / "scores.csv", synthetic_rows())
+    rows = analyze.read_scores_csv(p)
+    res = analyze.compute_results(rows, n_boot=100, seed=7)
+    assert "unavailable" in res["subgroups"]
+
+
 def test_report_is_utf8_on_every_platform(tmp_path):
     """Report text contains non-ASCII (arrows, en-dashes). Writing it must not depend on the
     platform's default codec — this exact bug crashed report writing on Windows (cp1252)."""
