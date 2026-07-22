@@ -34,6 +34,23 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, second pass — the four Fable-tagged judgment items, closed.** (1) Attestation
+levels sharpened and signed: `verified` now includes an artifact-hash path (GGUF sha256 /
+ollama digest matched against server identity), so the longitudinal spec's llama.cpp apparatus
+will not rest on a server's word; `self-reported` is defined by whether an unchanged report
+is evidence of an unchanged instrument; `opaque` has an explicit permitted-claims list and a
+measured-during window. (2) Cross-instrument presentation rules adopted (ops
+engineering-standards): rankings only as fixed-corpus selection decisions; `gaige plan` will
+show feasibility and cost, never a quality column. (3) Device policy signed: `auto` keeps its
+loud CPU fallback, and the real hole is fixed — **reproduce commands now record the resolved
+device, never "auto"** (a receipt can no longer silently swap instruments when re-run
+elsewhere). (4) The CPU default is **measured**: six candidates, one protocol, receipts
+retained — gpt2-large alone separated the reference corpus perfectly (AUROC 1.0000, TPR 100%
+at 1%-FPR and conformal α=0.01) at 0.64 s/sample, dominating gpt2-xl and gpt-neo-1.3B; and
+separation was non-monotone in size, which is exactly why defaults get measured. Bonus
+instrument datum from the verification run: gpt2/fp32 scored 0.9944 on GPU vs 0.9942 on CPU —
+same model, different device, different number, as the fingerprint has claimed all along.
+
 ## 2026-07-21 evening — runs without a GPU; identity is now enforced, not asserted
 
 **Redefined.** "Calibration + receipts for AI-text detectors" was accurate while text detection

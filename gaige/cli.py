@@ -91,10 +91,14 @@ def cmd_run(args) -> int:
     det.load()
     print("[detector] loaded + quantization verified")
 
+    # The reproduce command pins the RESOLVED device, never "auto": auto re-run on another
+    # machine would silently swap instruments, which is the exact failure receipts exist to
+    # prevent. Model is already resolved above for the same reason.
+    resolved_device = det.metadata()["device"]
     reproduce = (
         f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
         f"--detector {args.detector} --model {args.model} --quant {args.quant} "
-        f"--device {args.device} --max-tokens {args.max_tokens}"
+        f"--device {resolved_device} --max-tokens {args.max_tokens}"
     )
     if resuming:
         # Full fingerprint check: only now are library versions and the resolved device known.
