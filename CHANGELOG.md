@@ -68,6 +68,34 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, apparatus Phase A)
+
+- **The probe runner** — the acquisition layer the longitudinal spec's M1 metric needs:
+  `gaige probe run` takes a dated probe set (JSONL with per-probe provenance:
+  source/source_date/vintage) through a model provider to a graded receipt — accuracy per
+  vintage with bootstrap CIs (single-class reuse of `calibrate.bootstrap_ci`) and the
+  per-vintage **post-cutoff share** against `--cutoff`, so "the probes post-date the model"
+  is demonstrated, not asserted. Crash-safe + resumable (runstate pattern, parametrized);
+  a resume refuses if ANY pinned fingerprint field changed (provider identity, decoding
+  block, grading version, probe-set hash, cutoff).
+- **Providers with graded attestation** (`gaige/providers/`): `local-hf` (in-process,
+  attestation `verified`, greedy/seeded completion + per-option continuation logprobs for
+  the MC control path) and `llamacpp` (OpenAI-compat `/v1`; attestation EARNED —
+  `verified` with a `--gguf` sha256 matching the server's reported artifact,
+  `self-reported` from `/props`, `opaque` otherwise; declares COMPLETE only until its
+  logprob path is verified against the in-process reference). Capability declarations with
+  refusal-naming-what's-missing; **prompts never leave the machine for a non-local endpoint
+  without `--allow-remote-text`**. Plus `gaige providers` and `gaige test-connection`.
+- **Deterministic grading** (`gaige/grading.py`): versioned normalized-exact-match pipeline
+  (`nem-1`: NFKC → casefold → strip punctuation → collapse whitespace → drop one leading
+  article) + authored aliases; MC argmax over option logprobs with conservative tie
+  handling (a tie is not an answer). The grading version is part of the fingerprint.
+- **Probe sets** (`gaige/probes.py`): schema-validated loader (errors name the row and the
+  remedy), sha256 fingerprint, per-vintage counts, post-cutoff arithmetic.
+- Tests: 64 → 81 (grading edges incl. unicode/ligature/casefold; probe schema refusals;
+  runner resume, both refusal paths, remote opt-in, capability naming — all via an
+  injectable fake provider, no model or network in CI).
+
 ### Changed
 
 - **The CPU default is now measured, not asserted** (2026-07-22): six candidates
