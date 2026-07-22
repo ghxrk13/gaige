@@ -119,11 +119,44 @@ change `--n-boot`, regenerate a report, or do analysis on a machine with no GPU.
 Analysing a bare `scores.csv` with no `env.json` produces a report that says **INSTRUMENT UNKNOWN**
 — deliberately, because those thresholds attest to nothing.
 
-## 3. Workflow B — longitudinal drift (NOT BUILT YET)
+## 3. Workflow B — longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
 
-The longitudinal study apparatus: probe runner, run registry, ECE/P(True), Page-Hinkley/CUSUM, detection
-latency. **None of it exists yet.** See `private-notes/longitudinal study-requirements-trace.md` for exactly
-what is HAVE / PLANNED / GAP. Do not assume any of it works because this file mentions it.
+### 3a. Run a probe set (built 2026-07-22)
+
+```bash
+python -m gaige.cli probe run --probes probes.jsonl --provider local-hf \
+    --model <instruct-model> --device cpu --cutoff 2024-06-01
+```
+
+Probe JSONL rows: `{"id","prompt","answer","vintage","source","source_date"}` plus optional
+`aliases`/`authored` — the loader refuses anything less, naming the row and the remedy.
+Output: `reports/<ts>-probes/` with `report.md` (accuracy per vintage with 95% CI, the
+per-vintage **post-cutoff share** vs `--cutoff`, full fingerprint incl. attestation +
+decoding + grading version), `answers.csv`, and a crash-safe partial while running
+(`--resume <dir>` continues; ANY pinned fingerprint change refuses).
+
+**What correct looks like:** greedy is the default (temperature 0, pre-registered); the
+provider line prints its attestation (`verified` for local-hf; llamacpp earns
+verified/self-reported/opaque — pass `--gguf` to hash the artifact). A NON-local endpoint
+refuses to receive text without `--allow-remote-text`; that is a security property.
+
+**Grading is deliberately strict** (normalized exact match + authored aliases, version
+`nem-1`): a base model that rambles past the answer grades WRONG — measured on gpt2, which
+answered "The capital of France is" with "the capital of the French Republic, and" (graded
+False, correctly). Use an instruct model and author prompts that elicit short answers; the
+prompt is part of the instrument.
+
+```bash
+python -m gaige.cli providers                    # list providers + env config
+python -m gaige.cli test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
+```
+
+### 3b. Not built yet
+
+Run registry/series, replicates + variance bound, P(True)/ECE, change detectors — Phases
+B-D of `private-notes/queue/apparatus-burst-staging.md`. A single probe receipt is a POINT, not
+a series; movement claims need the registry. Do not assume any of it works because this
+file mentions it.
 
 ## 4. Checks you can run any time
 
