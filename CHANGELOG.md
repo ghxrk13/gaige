@@ -70,6 +70,25 @@ first real release is staged in `pypi-stub/`.
 
 ### Changed
 
+- **The CPU default is now measured, not asserted** (2026-07-22): six candidates
+  (distilgpt2, gpt2, gpt2-medium, gpt2-large, gpt2-xl, gpt-neo-1.3B) on
+  hc3-mini(n=100,seed=17), fp32/cpu, fixed protocol. gpt2-large was the only candidate with
+  perfect separation (AUROC 1.0000; TPR 100% at 1%-FPR and at conformal α=.01) and did it at
+  0.64 s/sample, dominating both larger candidates. `DEFAULT_MODEL` unchanged; its comment
+  now cites the measurement. Selection on one corpus under one protocol — not a detector
+  ranking; separation was measurably non-monotone in model size (gpt2-large > gpt2-xl here).
+
+### Fixed (2026-07-22, second pass)
+
+- **The reproduce command could silently swap instruments.** A `--device auto` run recorded
+  the literal string "auto" in its reproduce command, so re-running the receipt on a
+  different machine would resolve to a different device — a different instrument — with no
+  warning. Reproduce lines now record the RESOLVED device (verified live: an auto run's
+  receipt says `--device cuda`). Policy alongside it in the RUNBOOK: `auto` is for
+  exploratory runs; pre-registered runs pin `--device` explicitly.
+
+### Changed (original 0.0.1 notes)
+
 - **Redefined.** "Calibration + receipts for AI-text detectors" → **"calibration and drift
   receipts for AI measurement."** Text detection was the definition while it was the only
   application; it is now one of two, alongside telling whether an observed change is in the system

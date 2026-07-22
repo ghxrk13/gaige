@@ -36,11 +36,14 @@ CUDA_ONLY_QUANT = {"4bit"}
 #
 # The point of a default is that `gaige run` succeeds on whatever machine you are sitting at.
 # falcon-7b is the reference instrument but is a ~14 GB download and impractical on CPU
-# (measured ~20-36 s/sample); gpt2-large runs anywhere and scores in fractions of a second.
+# (measured ~20-36 s/sample).
 #
-# These are ERGONOMIC defaults, not a claim about which model detects best. That is an
-# empirical question gaige should answer with a published comparison rather than assert here,
-# and until it does, an auto-selected model is recorded as such on every receipt.
+# The CPU default is MEASURED, not asserted (2026-07-22): a six-candidate comparison on
+# hc3-mini(n=100,seed=17), fp32/cpu, found gpt2-large the only candidate with perfect
+# separation (AUROC 1.0000, TPR 100% at the 1%-FPR and conformal a=.01 operating points) at
+# 0.64 s/sample — dominating gpt2-xl and gpt-neo-1.3B on both axes. Selection on ONE corpus
+# under one protocol; it says nothing about detector quality in general, and an auto-selected
+# model is still recorded as such on every receipt.
 DEFAULT_MODEL = {
     "cuda": ("tiiuae/falcon-7b", "4bit"),
     "cpu": ("gpt2-large", "fp32"),

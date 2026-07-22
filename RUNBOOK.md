@@ -77,7 +77,19 @@ receipt records `device: cpu` and gaige will warn if you try to use one report's
 other's environment.
 
 Omit `--model` entirely and gaige picks per device (falcon-7b/4bit on CUDA, gpt2-large/fp32 on CPU)
-and records `model_auto_selected` on the receipt.
+and records `model_auto_selected` on the receipt. The CPU default is a **measured selection**
+(2026-07-22, six candidates on hc3-mini n=100 seed=17, fp32/cpu): gpt2-large was the only
+candidate with perfect separation on that corpus (AUROC 1.0000; TPR 100% at 1%-FPR and at
+conformal α=.01) at 0.64 s/sample, dominating gpt2-xl and gpt-neo-1.3B on both axes. One
+corpus, one protocol — a default-selection receipt, not a detector ranking; each candidate's
+run is reproducible with the command above plus `--model <name>`.
+
+**Device policy (decided 2026-07-22):** `--device auto` is for exploratory runs — it prefers
+CUDA, falls back to CPU loudly, and the receipt records the fallback. **Pre-registered or
+scientific runs pin `--device` explicitly** (the run registry treats device class as
+instrument identity, so a mid-series fallback forks the series). Either way the receipt's
+reproduce command always carries the RESOLVED device, never "auto" — re-running a receipt can
+never silently swap instruments.
 
 ### 2b. Score a document against that calibration
 
