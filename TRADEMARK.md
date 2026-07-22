@@ -32,12 +32,23 @@ was built to fix.
 Anyone authorized to use the mark must:
 
 1. Keep the receipt fields intact — instrument fingerprint (model, quantization **verified**,
-   library versions, hardware), corpus identity and hash, achieved error rates with
-   uncertainty, and the reproduce command. Removing or falsifying these forfeits use of the name.
+   library versions, hardware), corpus identity and hash, error rates with their uncertainty
+   and their labels (in-sample vs guaranteed), and the reproduce command. Removing or
+   falsifying these forfeits use of the name.
 2. Never present a gaige score as a verdict, a probability of misconduct, or proof that a
    person did anything. It is a measurement with error bars.
 3. Never publish thresholds without the conditions they were measured under.
 4. Disclose modifications, as above.
+
+## How permissions are supervised
+
+A written policy alone does not keep a mark alive — naked-licensing doctrine
+(FreecycleSunnyvale v. Freecycle Network, 626 F.3d 509, 9th Cir. 2010) abandoned marks whose
+owner had a written standard but no retained control right and no actual supervision. So:
+every written permission granted under this policy **retains the right to review the
+permitted use and to revoke on breach of the quality standards above**, and reviews actually
+performed are recorded (date, use inspected, outcome) alongside the grant. No permissions
+have been granted as of 2026-07-22.
 
 ## Requests
 

@@ -10,7 +10,7 @@ consistent with a true rate several times higher, and the error lands on real pe
 
 Split conformal prediction fixes the threshold at an order statistic of the calibration
 scores such that, for exchangeable data, P(false positive) <= alpha holds in finite samples —
-no distributional assumptions. Following Wang et al. (arXiv:2505.05084), which applies
+no distributional assumptions. Following Zhu et al. (arXiv:2505.05084), which applies
 conformal prediction to machine-generated-text detection specifically and reports empirical
 FPRs staying within the theoretical bound across seven detectors at alpha from 0.2 to 0.005.
 (The paper squashes detector output through a monotone sigmoid first; quantiles are
@@ -59,7 +59,7 @@ def conformal_threshold(human_scores: np.ndarray, alpha: float) -> dict:
     """Threshold with a finite-sample marginal guarantee that P(human flagged) <= alpha.
 
     Uses the ceil((n+1)(1-alpha))-th order statistic of the human calibration scores, the
-    standard split-conformal quantile with the finite-sample correction (Wang et al.
+    standard split-conformal quantile with the finite-sample correction (Zhu et al.
     arXiv:2505.05084 Eq. 1; flag rule Eq. 4). With tied scores the strict-inequality rule
     can only flag less, so the bound stays valid.
 
