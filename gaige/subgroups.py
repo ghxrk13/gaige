@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from . import calibrate
+
 # Buckets chosen so the shortest reflects the "noise-dominated" regime detectors fail on.
 LENGTH_BUCKETS = ((0, 100), (100, 250), (250, 500), (500, 10**9))
 MIN_SUBGROUP = 20  # below this, report the count and refuse to report a rate
@@ -35,7 +37,11 @@ def length_bucket(n_words: int) -> str:
 
 
 def auto_keys(rows: list[dict]) -> list[str]:
-    """Stratification axes = length (always) + any metadata key present on every row."""
+    """Stratification axes = length (always) + any metadata key present on EVERY row.
+
+    Every row, both classes: a subgroup TPR needs the ai rows bucketed on the same axis as
+    the human rows, so an axis missing from either side is no axis at all.
+    """
     keys = ["length_bucket"]
     meta_keys = set(rows[0].get("meta", {}) or {}) if rows else set()
     for k in sorted(meta_keys):
@@ -50,11 +56,44 @@ def _value(row: dict, key: str) -> str:
     return str((row.get("meta") or {}).get(key, "unknown"))
 
 
-def stratified_rates(rows: list[dict], threshold: float, keys: list[str] | None = None) -> dict:
+def _rate_with_ci(
+    grp: list[dict], label: str, threshold: float, n_boot: int, seed: int
+) -> tuple[float | None, tuple[float, float] | None]:
+    """Flag rate for one subgroup's rows of one class, with a bootstrap CI — or a refusal.
+
+    Below MIN_SUBGROUP the rate is withheld (None), not shown-but-flagged: a rate on a
+    handful of samples is noise wearing a percent sign, and downstream renderers print
+    whatever they are given. The count still gets reported by the caller.
+    """
+    if len(grp) < MIN_SUBGROUP:
+        return None, None
+    scores = np.array([g["score"] for g in grp], dtype=np.float64)
+    labels = np.array([label] * len(grp))
+    rate = float((scores >= threshold).mean())
+    ci = calibrate.bootstrap_ci(
+        scores,
+        labels,
+        lambda s, lb: float((s >= threshold).mean()),
+        n_boot=n_boot,
+        seed=seed,
+    )
+    return rate, ci
+
+
+def stratified_rates(
+    rows: list[dict],
+    threshold: float,
+    keys: list[str] | None = None,
+    n_boot: int = 1000,
+    seed: int = 17,
+) -> dict:
     """Per-subgroup FPR (on human rows) and TPR (on ai rows) at a fixed threshold.
 
     rows: [{"label", "score", "n_words", "meta": {...}}]
-    Returns {key: {value: {n_human, fpr|None, n_ai, tpr|None, suppressed: bool}}}
+    Every reported rate carries a bootstrap CI (reusing calibrate.bootstrap_ci in
+    single-class mode). Below MIN_SUBGROUP samples in a class, that class's rate and CI are
+    None and only the count speaks. `rate_withheld` is True when either class was refused.
+    Returns {key: {value: {n_human, fpr, fpr_ci, n_ai, tpr, tpr_ci, rate_withheld}}}
     """
     keys = keys or auto_keys(rows)
     out: dict = {}
@@ -66,25 +105,30 @@ def stratified_rates(rows: list[dict], threshold: float, keys: list[str] | None 
         for value, grp in sorted(groups.items()):
             h = [g for g in grp if g["label"] == "human"]
             a = [g for g in grp if g["label"] == "ai"]
-            small = len(h) < MIN_SUBGROUP
+            fpr, fpr_ci = _rate_with_ci(h, "human", threshold, n_boot, seed)
+            tpr, tpr_ci = _rate_with_ci(a, "ai", threshold, n_boot, seed)
             per_value[value] = {
                 "n_human": len(h),
                 "n_ai": len(a),
-                "fpr": (float(np.mean([x["score"] >= threshold for x in h])) if h else None),
-                "tpr": (float(np.mean([x["score"] >= threshold for x in a])) if a else None),
-                "suppressed": small,  # rate shown but flagged as statistically thin
+                "fpr": fpr,
+                "fpr_ci": fpr_ci,
+                "tpr": tpr,
+                "tpr_ci": tpr_ci,
+                "rate_withheld": fpr is None or tpr is None,
             }
         out[key] = per_value
     return out
 
 
 def max_disparity(strata: dict) -> dict:
-    """Largest FPR gap between subgroups on each axis (only over non-thin groups)."""
+    """Largest FPR gap between subgroups on each axis, over groups whose rate was reported.
+
+    `gap` is exactly the FPR-disparity metric of FairOPT (arXiv:2502.04528 Eq. 8:
+    max_g FPR_g - min_g FPR_g), so the number is directly comparable to that literature.
+    """
     out = {}
     for key, values in strata.items():
-        fprs = {
-            v: d["fpr"] for v, d in values.items() if d["fpr"] is not None and not d["suppressed"]
-        }
+        fprs = {v: d["fpr"] for v, d in values.items() if d["fpr"] is not None}
         if len(fprs) < 2:
             out[key] = None
             continue
@@ -101,27 +145,19 @@ def max_disparity(strata: dict) -> dict:
     return out
 
 
-def base_rate_harm(fpr: float, volume: int, ai_prevalence: float | None = None) -> dict:
+def base_rate_harm(fpr: float, volume: int) -> dict:
     """Translate an FPR into people wrongly flagged at a given volume.
 
     This is the calculation Vanderbilt published when it disabled Turnitin's AI detector:
     a claimed 1% false-positive rate against 75,000 submissions/year is ~750 papers wrongly
     flagged. Every calibration report should force the reader to see this number.
-
-    If ai_prevalence is supplied, also reports the positive predictive value — the share of
-    flagged documents that are actually AI-written — which is the number that decides whether
-    a flag means anything at all.
+    Prevalence-dependent PPV is `ppv()` below; the two are deliberately separate calls.
     """
-    false_positives = fpr * volume
-    out = {
+    return {
         "fpr": fpr,
         "volume": volume,
-        "expected_false_positives": false_positives,
+        "expected_false_positives": fpr * volume,
     }
-    if ai_prevalence is not None:
-        out["ai_prevalence"] = ai_prevalence
-        # PPV needs a TPR; callers pass the calibrated one via ppv() below when available.
-    return out
 
 
 def ppv(fpr: float, tpr: float, prevalence: float) -> float:

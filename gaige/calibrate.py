@@ -102,15 +102,19 @@ def bootstrap_ci(
     seed: int = 17,
     ci: float = 0.95,
 ) -> tuple[float, float]:
-    """Percentile bootstrap CI, resampling within each class."""
+    """Percentile bootstrap CI, resampling within each class.
+
+    A single-class input (e.g. one subgroup's human rows, for a per-subgroup FPR interval)
+    resamples the class that exists. With both classes present the RNG call sequence is
+    unchanged, so two-class results are bit-identical to prior versions.
+    """
     rng = np.random.default_rng(seed)
     h_idx = np.flatnonzero(labels == "human")
     a_idx = np.flatnonzero(labels == "ai")
     vals = []
     for _ in range(n_boot):
-        hs = rng.choice(h_idx, size=len(h_idx), replace=True)
-        as_ = rng.choice(a_idx, size=len(a_idx), replace=True)
-        idx = np.concatenate([hs, as_])
+        parts = [rng.choice(cls, size=len(cls), replace=True) for cls in (h_idx, a_idx) if len(cls)]
+        idx = np.concatenate(parts)
         try:
             vals.append(stat_fn(scores[idx], labels[idx]))
         except CorpusTooSmall:
