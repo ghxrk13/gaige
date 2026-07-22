@@ -75,7 +75,7 @@ def _conformal_lines(results: dict) -> list[str]:
     lines = [
         "",
         "## Conformal thresholds (distribution-free FPR bound)",
-        "Split conformal (Wang et al., arXiv:2505.05084): the threshold is an order statistic "
+        "Split conformal (Zhu et al., arXiv:2505.05084): the threshold is an order statistic "
         "of the human calibration scores, giving **P(human flagged) ≤ α marginally over "
         "calibration draws** — finite-sample, no distributional assumptions. Conditionally on "
         "THIS calibration set the true FPR is Beta(n+1−k, k); its exact mean ± sd is shown. "

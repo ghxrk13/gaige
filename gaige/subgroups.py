@@ -5,14 +5,14 @@
 """Subgroup-stratified error reporting.
 
 Aggregate error rates hide who pays for them. The measured literature is blunt about this:
-static thresholds produce substantially higher false-positive rates on short texts (Nguyen
+static thresholds produce substantially higher false-positive rates on short texts (Jung
 et al., arXiv:2502.04528), and seven commercial detectors misclassified over half of
 human-written TOEFL essays by non-native speakers as AI — an average 61.2% FPR versus ~5.2%
 on native-speaker essays (Liang et al., arXiv:2304.02819).
 
 gaige therefore reports error rates per subgroup by default. A corpus can carry arbitrary
 metadata keys on each row (e.g. "length_bucket", "l1", "domain"); any key present on every
-human-labeled row becomes a stratification axis.
+row (both classes) becomes a stratification axis.
 
 Length bucketing is built in because it needs no annotation and is the disparity every
 corpus can measure.
