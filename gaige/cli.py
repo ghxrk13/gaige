@@ -107,8 +107,13 @@ def cmd_run(args) -> int:
     t_all = time.time()
     try:
         for i, item in enumerate(corpus.items, 1):
+            # Derived word count (and optional metadata) ride along for subgroup receipts.
+            # The corpus is the source of truth for both, so resumed rows get them too.
+            extras = {"n_words": len(item["text"].split())}
+            if item.get("meta"):
+                extras["meta"] = item["meta"]
             if item["id"] in done:
-                rows.append(done[item["id"]])
+                rows.append({**done[item["id"]], **extras})
                 continue
             t0 = time.time()
             s = det.score(item["text"])
@@ -117,6 +122,7 @@ def cmd_run(args) -> int:
                 "label": item["label"],
                 "score": s,
                 "seconds": round(time.time() - t0, 3),
+                **extras,
             }
             runstate.append_row(fh, writer, row)  # on disk before we move on
             rows.append(row)
@@ -133,7 +139,11 @@ def cmd_run(args) -> int:
     fh.close()
 
     results = analyze_mod.compute_results(
-        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
+        rows,
+        target_fprs=TARGET_FPRS,
+        n_boot=args.n_boot,
+        seed=args.seed,
+        harm_volume=args.harm_volume,
     )
     report = write_report(outdir, corpus, det.metadata(), rows, results, reproduce)
     runstate.mark_complete(outdir)
@@ -148,8 +158,16 @@ def _print_receipt(report_path: Path, results: dict) -> None:
     for row in results["thresholds"]:
         print(
             f"[receipt] @FPR<={row['target_fpr']:.0%}: thr={row['threshold']:.4f} "
-            f"achievedFPR={row['achieved_fpr']:.3%} TPR={row['achieved_tpr']:.1%}"
+            f"FPRcal={row['achieved_fpr']:.3%} (in-sample) TPR={row['achieved_tpr']:.1%}"
         )
+    for row in results.get("conformal", []):
+        if "unavailable" in row:
+            print(f"[receipt] conformal a={row['alpha']:g}: refused ({row['unavailable']})")
+        else:
+            print(
+                f"[receipt] conformal a={row['alpha']:g}: thr={row['threshold']:.4f} "
+                f"TPR={row['tpr']:.1%} (marginal FPR guarantee <= {row['alpha']:g})"
+            )
 
 
 def cmd_analyze(args) -> int:
@@ -176,7 +194,11 @@ def cmd_analyze(args) -> int:
         )
 
     results = analyze_mod.compute_results(
-        rows, target_fprs=TARGET_FPRS, n_boot=args.n_boot, seed=args.seed
+        rows,
+        target_fprs=TARGET_FPRS,
+        n_boot=args.n_boot,
+        seed=args.seed,
+        harm_volume=args.harm_volume,
     )
 
     outdir = (
@@ -250,6 +272,13 @@ def main(argv=None) -> int:
     )
     r.add_argument("--max-tokens", type=int, default=1024)
     r.add_argument("--n-boot", type=int, default=1000)
+    r.add_argument(
+        "--harm-volume",
+        type=int,
+        default=analyze_mod.HARM_VOLUME_DEFAULT,
+        help="documents/year for the base-rate harm line "
+        "(default: Vanderbilt's published 75,000 submissions/year)",
+    )
     r.add_argument("--root", default=".", help="project root holding corpora/ and reports/")
     r.add_argument(
         "--resume",
@@ -267,6 +296,13 @@ def main(argv=None) -> int:
     a_src.add_argument("--scores", help="a bare scores.csv (columns: label, score[, id, seconds])")
     a.add_argument("--n-boot", type=int, default=1000)
     a.add_argument("--seed", type=int, default=17)
+    a.add_argument(
+        "--harm-volume",
+        type=int,
+        default=analyze_mod.HARM_VOLUME_DEFAULT,
+        help="documents/year for the base-rate harm line "
+        "(default: Vanderbilt's published 75,000 submissions/year)",
+    )
     a.add_argument(
         "--out", help="output directory (default: a new timestamped dir beside the source)"
     )

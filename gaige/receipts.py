@@ -68,6 +68,117 @@ def _fingerprint_lines(m: dict) -> list[str]:
     return lines
 
 
+def _conformal_lines(results: dict) -> list[str]:
+    rows = results.get("conformal", [])
+    if not rows:
+        return []
+    lines = [
+        "",
+        "## Conformal thresholds (distribution-free FPR bound)",
+        "Split conformal (Wang et al., arXiv:2505.05084): the threshold is an order statistic "
+        "of the human calibration scores, giving **P(human flagged) ≤ α marginally over "
+        "calibration draws** — finite-sample, no distributional assumptions. Conditionally on "
+        "THIS calibration set the true FPR is Beta(n+1−k, k); its exact mean ± sd is shown. "
+        'No "achieved FPR" appears here by design: the in-sample flag rate is (n−k)/n by '
+        "construction and measures nothing.",
+        "",
+        "| alpha | threshold | order stat k/n | conditional FPR mean ± sd | TPR on this corpus |",
+        "|---|---|---|---|---|",
+    ]
+    refusals = []
+    for r in rows:
+        if "unavailable" in r:
+            refusals.append(f"- α={r['alpha']:g}: refused — {r['unavailable']}")
+            continue
+        lines.append(
+            f"| {r['alpha']:g} | {r['threshold']:.4f} | {r['order_statistic']}/{r['n_calibration']} "
+            f"| {r['conditional_fpr_mean']:.2%} ± {r['conditional_fpr_sd']:.2%} | {r['tpr']:.1%} |"
+        )
+    return lines + refusals
+
+
+def _fmt_rate(rate, ci, n: int, floor: int) -> str:
+    if rate is None:
+        return f"withheld (n={n} < {floor})"
+    lo, hi = ci
+    return f"{rate:.1%} [{lo:.1%}–{hi:.1%}]"
+
+
+def _subgroup_lines(results: dict) -> list[str]:
+    block = results.get("subgroups")
+    if not block:
+        return []
+    lines = ["", "## Subgroup error rates (measured on this corpus only)"]
+    if "unavailable" in block:
+        return lines + [f"- {block['unavailable']}"]
+    floor = block["min_subgroup"]
+    lines += [
+        f"Axes are what this corpus carries: length bucket always, metadata axes only when "
+        f"present on every row. A class with fewer than {floor} samples gets its count shown "
+        "and its rate withheld. Intervals are 95% bootstrap. These axes make **no demographic "
+        "claim**; disparities documented in the literature (ESL: arXiv:2304.02819) are cited, "
+        "not measured here, unless the corpus carries that axis.",
+    ]
+    for bt in block["by_threshold"]:
+        lines += ["", f"At target FPR ≤ {bt['target_fpr']:.0%} (threshold {bt['threshold']:.4f}):"]
+        for axis, groups in bt["strata"].items():
+            lines += [
+                "",
+                f"| {axis} | n_human | FPR [95% CI] | n_ai | TPR [95% CI] |",
+                "|---|---|---|---|---|",
+            ]
+            for value, d in groups.items():
+                lines.append(
+                    f"| {value} | {d['n_human']} "
+                    f"| {_fmt_rate(d['fpr'], d['fpr_ci'], d['n_human'], floor)} "
+                    f"| {d['n_ai']} | {_fmt_rate(d['tpr'], d['tpr_ci'], d['n_ai'], floor)} |"
+                )
+            disp = (bt.get("max_fpr_disparity") or {}).get(axis)
+            if disp and disp["gap"] == 0:
+                lines.append(
+                    f"- max FPR disparity on {axis}: **0.0%** (all reported groups equal) "
+                    "— FairOPT Δ_FPR, arXiv:2502.04528 Eq. 8"
+                )
+            elif disp:
+                lines.append(
+                    f"- max FPR disparity on {axis}: **{disp['gap']:.1%}** "
+                    f"(worst {disp['worst_group']} {disp['worst_fpr']:.1%} vs best "
+                    f"{disp['best_group']} {disp['best_fpr']:.1%}) — FairOPT Δ_FPR, "
+                    "arXiv:2502.04528 Eq. 8"
+                )
+            else:
+                lines.append(
+                    f"- max FPR disparity on {axis}: not computable "
+                    "(fewer than two groups with a reported rate)"
+                )
+    return lines
+
+
+def _base_rate_lines(results: dict) -> list[str]:
+    br = results.get("base_rate")
+    if not br:
+        return []
+    lines = [
+        "",
+        "## Base-rate arithmetic (what an FPR means at volume)",
+        f"Volume: {br['volume']:,} documents/year ({br['volume_note']}; change with "
+        "`--harm-volume`). This is the calculation Vanderbilt published when it disabled "
+        "Turnitin's AI detector. PPV = share of flags that would actually be AI, at an "
+        "assumed prevalence, using this corpus's in-sample TPR.",
+        "",
+    ]
+    for at in br["at"]:
+        ppvs = " / ".join(
+            f"{p['ppv']:.0%} @ {p['prevalence']:.0%} AI" for p in at["ppv_at_prevalence"]
+        )
+        lines.append(
+            f"- operating at FPR ≤ {at['target_fpr']:.0%}: {at['target_fpr']:.0%} × "
+            f"{br['volume']:,} = **{at['expected_false_positives']:,.0f} wrongly flagged "
+            f"per year**. PPV: {ppvs}."
+        )
+    return lines
+
+
 def write_report(
     outdir: Path,
     corpus,
@@ -80,9 +191,18 @@ def write_report(
     ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     with open(outdir / "scores.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["id", "label", "score", "seconds"])
+        w = csv.DictWriter(
+            f,
+            fieldnames=["id", "label", "score", "seconds", "n_words", "meta"],
+            extrasaction="ignore",
+            restval="",
+        )
         w.writeheader()
-        w.writerows(scores_rows)
+        for r in scores_rows:
+            rr = dict(r)
+            if isinstance(rr.get("meta"), dict):
+                rr["meta"] = json.dumps(rr["meta"], separators=(",", ":"), sort_keys=True)
+            w.writerow({k: ("" if rr.get(k) is None else rr.get(k, "")) for k in w.fieldnames})
 
     (outdir / "roc.json").write_text(json.dumps(results["roc"], indent=1), encoding="utf-8")
     (outdir / "results.json").write_text(
@@ -92,6 +212,9 @@ def write_report(
                 "auroc": results["auroc"],
                 "auroc_ci": results["auroc_ci"],
                 "thresholds": results["thresholds"],
+                "conformal": results.get("conformal", []),
+                "subgroups": results.get("subgroups", {}),
+                "base_rate": results.get("base_rate", {}),
                 "n_boot": results["n_boot"],
             },
             indent=1,
@@ -129,7 +252,7 @@ def write_report(
         "## Results",
         f"- **AUROC {results['auroc']:.4f}** (95% bootstrap CI {a_lo:.4f}–{a_hi:.4f}, n_boot={results['n_boot']})",
         "",
-        "| target FPR | threshold | achieved FPR | TPR at threshold | TPR 95% CI |",
+        "| target FPR | threshold | FPR on calibration sample | TPR at threshold | TPR 95% CI |",
         "|---|---|---|---|---|",
     ]
     for row in results["thresholds"]:
@@ -138,12 +261,24 @@ def write_report(
             f"| {row['target_fpr']:.0%} | {row['threshold']:.4f} | {row['achieved_fpr']:.3%} "
             f"| {row['achieved_tpr']:.1%} | {t_lo:.1%}–{t_hi:.1%} |"
         )
+    lines += _conformal_lines(results)
+    lines += _subgroup_lines(results)
+    lines += _base_rate_lines(results)
     lines += [
         "",
         "## Honest caveats (read before using these thresholds)",
         "- Thresholds are valid ONLY for this instrument fingerprint on text like this corpus. "
         "Different model, quantization, library versions, text domain, or model-family of the "
         "AI side ⇒ re-calibrate.",
+        '- "FPR on calibration sample" is an in-sample observation, not a guarantee. The '
+        "conformal table is the guarantee, and it is **marginal over calibration draws**: the "
+        "conditional mean ± sd column shows how much the realized rate wobbles around α.",
+        "- Every conformal guarantee assumes deployment human text is exchangeable with the "
+        "calibration humans. Domain shift, a different population of writers, or a different "
+        "AI family on the flagged side voids the bound. This assumption is stated, not waived.",
+        "- Subgroup tables report only the axes this corpus carries; withheld cells are the "
+        "floor working as intended, and interval width — not the point estimate — is the "
+        "honest summary of a small group.",
         f"- {corpus.meta.get('note', 'Corpus generalization limits apply.')}",
         "- Single detector, single corpus: no ensemble, no cross-domain claim, no style-matched "
         "adversarial evaluation (documented failure mode of this detector class).",

@@ -134,6 +134,18 @@ def score_document(report_dir: Path, text: str, detector=None) -> dict:
                 "calibrated_tpr": row["achieved_tpr"],
             }
         )
+    conformal_verdicts = []
+    for row in inst["results"].get("conformal", []):
+        if "unavailable" in row:
+            continue
+        conformal_verdicts.append(
+            {
+                "alpha": row["alpha"],
+                "threshold": row["threshold"],
+                "flags": bool(score >= row["threshold"]),
+                "calibrated_tpr": row["tpr"],
+            }
+        )
     return {
         "score": score,
         "n_words": n_words,
@@ -141,6 +153,7 @@ def score_document(report_dir: Path, text: str, detector=None) -> dict:
         "percentile_among_human": percentile_among(inst["human_scores"], score),
         "percentile_among_ai": percentile_among(inst["ai_scores"], score),
         "verdicts": verdicts,
+        "conformal_verdicts": conformal_verdicts,
         "instrument_mismatches": mismatches,
         "instrument": {
             "report": str(report_dir),
@@ -162,6 +175,13 @@ def format_result(r: dict) -> str:
         lines.append(
             f"  @FPR<={v['target_fpr']:.0%} (thr {v['threshold']:.4f}): {state} "
             f"(threshold catches {v['calibrated_tpr']:.0%} of corpus AI)"
+        )
+    for v in r.get("conformal_verdicts", []):
+        state = "FLAGS" if v["flags"] else "clear"
+        lines.append(
+            f"  conformal a={v['alpha']:g} (thr {v['threshold']:.4f}): {state} "
+            f"(marginal FPR guarantee <= {v['alpha']:g}, exchangeability assumed; "
+            f"catches {v['calibrated_tpr']:.0%} of corpus AI)"
         )
     if r["short_text_caveat"]:
         lines.append(

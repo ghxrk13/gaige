@@ -30,7 +30,7 @@ from pathlib import Path
 
 PARTIAL = "scores.partial.csv"
 RUNSTATE = "run.json"
-FIELDS = ["id", "label", "score", "seconds"]
+FIELDS = ["id", "label", "score", "seconds", "n_words", "meta"]
 
 # Fields of the instrument fingerprint that must not change mid-run. Anything here changing
 # means the second half of the corpus was measured with a different instrument.
@@ -137,12 +137,23 @@ def load_partial(outdir: Path) -> list[dict]:
 
 
 def open_partial(outdir: Path):
-    """Append-mode handle, writing the header only for a new file."""
+    """Append-mode handle, writing the header only for a new file.
+
+    Appending to a partial from an older gaige keeps THAT file's column set (a CSV whose
+    later rows are wider than its header is corrupt); extra keys on the row dict are
+    ignored rather than fatal. New files get the current schema.
+    """
     outdir.mkdir(parents=True, exist_ok=True)
     p = outdir / PARTIAL
     new = not p.exists() or p.stat().st_size == 0
+    fields = FIELDS
+    if not new:
+        with open(p, newline="", encoding="utf-8") as f:
+            existing = next(csv.reader(f), None)
+        if existing:
+            fields = existing
     fh = open(p, "a", newline="", encoding="utf-8")
-    writer = csv.DictWriter(fh, fieldnames=FIELDS)
+    writer = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore", restval="")
     if new:
         writer.writeheader()
         fh.flush()
@@ -151,7 +162,10 @@ def open_partial(outdir: Path):
 
 def append_row(fh, writer, row: dict) -> None:
     """Write one score and flush. The flush is the point — an unflushed buffer is not a receipt."""
-    writer.writerow(row)
+    r = dict(row)
+    if isinstance(r.get("meta"), dict):
+        r["meta"] = json.dumps(r["meta"], separators=(",", ":"), sort_keys=True)
+    writer.writerow(r)
     fh.flush()
 
 
