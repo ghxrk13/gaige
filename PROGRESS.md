@@ -34,6 +34,20 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, third pass — apparatus Phase A: the acquisition layer exists.** The provider
+seam (graded attestation: local-hf `verified` in-process; llamacpp earns
+verified/self-reported/opaque, with the GGUF-sha256 path so the longitudinal apparatus won't rest on
+a server's word), probe sets with per-probe provenance and the post-cutoff demonstration,
+versioned deterministic grading (`nem-1`, plus MC argmax with conservative ties), and
+`gaige probe run` — crash-safe, resumable, refusing any mid-run fingerprint change. Tests
+64 → 81, all refusal paths exercised via an injectable fake provider; e2e smoked on gpt2
+(which answered "The capital of France is" with "the capital of the French Republic, and" —
+graded False, correctly: strict grading working as signed, and the argument for an instruct
+model made empirically). The MC control path verified: " blue" beats " purple" after "The
+color of the sky on a clear day is". Prompts cannot leave the machine for a non-local
+endpoint without an explicit flag. Phases B-D staged next: registry/series, P(True)/ECE,
+the first longitudinal receipt.
+
 **Same day, second pass — the four Fable-tagged judgment items, closed.** (1) Attestation
 levels sharpened and signed: `verified` now includes an artifact-hash path (GGUF sha256 /
 ollama digest matched against server identity), so the longitudinal spec's llama.cpp apparatus
