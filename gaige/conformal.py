@@ -55,7 +55,9 @@ def min_samples_for(alpha: float) -> int:
     return int(math.ceil(1.0 / alpha)) - 1
 
 
-def conformal_threshold(human_scores: np.ndarray, alpha: float) -> dict:
+def conformal_threshold(
+    human_scores: np.ndarray, alpha: float, sample_noun: str = "human calibration samples"
+) -> dict:
     """Threshold with a finite-sample marginal guarantee that P(human flagged) <= alpha.
 
     Uses the ceil((n+1)(1-alpha))-th order statistic of the human calibration scores, the
@@ -73,7 +75,7 @@ def conformal_threshold(human_scores: np.ndarray, alpha: float) -> dict:
     need = min_samples_for(alpha)
     if n < need:
         raise InsufficientCalibration(
-            f"alpha={alpha} needs >= {need} human calibration samples, got {n}. "
+            f"alpha={alpha} needs >= {need} {sample_noun}, got {n}. "
             "A tighter guarantee than your data supports is not a guarantee."
         )
     s = np.sort(np.asarray(human_scores, dtype=np.float64))

@@ -359,10 +359,70 @@ def cmd_series(args) -> int:
                 f"vintages={','.join(s['vintages'])}"
             )
         return 0
+    if args.series_cmd == "watch":
+        return _cmd_series_watch(args, reg, registry_mod)
     p = reg / args.id / "series-report.md"
     if not p.exists():
         raise SystemExit(f"no series {args.id!r} under {reg} (try: gaige series list)")
     print(p.read_text(encoding="utf-8"))
+    return 0
+
+
+def _cmd_series_watch(args, reg: Path, registry_mod) -> int:
+    import json as _json
+
+    from . import monitors
+
+    sdir = reg / args.id
+    if not (sdir / "series.json").exists():
+        raise SystemExit(f"no series {args.id!r} under {reg} (try: gaige series list)")
+    series = _json.loads((sdir / "series.json").read_text(encoding="utf-8"))
+    direction = args.direction or ("up" if args.quantity == "gap" else "down")
+    vintages = [args.vintage] if args.vintage else sorted(series["vintage_hashes"])
+
+    lines = [
+        f"# gaige monitors — series {series['series_id']} · quantity {args.quantity} "
+        f"(alarm direction: {direction})",
+        "",
+        "Per-interval conformal alarms carry a marginal finite-sample false-alarm bound "
+        "calibrated on the Day-0 replicates; Page-Hinkley and CUSUM are cumulative "
+        "detectors reported with tuned constants and NO claimed guarantee (drift-literature "
+        "practice; conformal test martingales are the principled extension, future work).",
+    ]
+    for v in vintages:
+        seq = registry_mod.vintage_sequences(series, v, quantity=args.quantity)
+        lines += [
+            "",
+            f"## vintage {v} — reference n={len(seq['reference'])} (replicates), "
+            f"observed n={len(seq['observed'])} (intervals)",
+        ]
+        if not seq["observed"]:
+            lines.append("- no observed intervals with this quantity; nothing to watch")
+            continue
+        if not seq["reference"]:
+            lines.append("- no replicate reference; run the Day-0 protocol first")
+            continue
+        for res in monitors.watch(
+            seq["reference"], seq["observed"], alpha=args.alpha, direction=direction
+        ):
+            if res.get("refused"):
+                lines.append(f"- **{res['monitor']}**: REFUSED — {res['refused']}")
+                continue
+            when = (
+                "; ".join(f"interval {i} ({seq['labels'][i]})" for i in res["alarms"])
+                if res["alarms"]
+                else "no alarms"
+            )
+            extra = (
+                f" · threshold {res['threshold']:+.4f} · {res['guarantee']}"
+                if "threshold" in res
+                else f" · params {res['params']} · {res['guarantee']}"
+            )
+            lines.append(f"- **{res['monitor']}**: {when}{extra}")
+    text = "\n".join(lines) + "\n"
+    (sdir / "monitors-report.md").write_text(text, encoding="utf-8")
+    print(text)
+    print(f"[monitors] written to {sdir / 'monitors-report.md'}")
     return 0
 
 
@@ -563,6 +623,27 @@ def main(argv=None) -> int:
     ss.add_argument("id")
     ss.add_argument("--registry", default="registry")
     ss.set_defaults(fn=cmd_series)
+    sw = se_sub.add_parser(
+        "watch", help="M5: run the drift-monitor panel over a series (post-hoc replay)"
+    )
+    sw.add_argument("id")
+    sw.add_argument("--registry", default="registry")
+    sw.add_argument("--vintage", default=None, help="default: every vintage in the series")
+    sw.add_argument("--quantity", default="accuracy", choices=["accuracy", "gap"])
+    sw.add_argument(
+        "--alpha",
+        type=float,
+        default=0.2,
+        help="conformal per-interval false-alarm bound; needs ceil(1/alpha)-1 zero-drift "
+        "reference intervals (0.2 -> 4). Refuses honestly below that.",
+    )
+    sw.add_argument(
+        "--direction",
+        default=None,
+        choices=["down", "up"],
+        help="default: down for accuracy, up for gap",
+    )
+    sw.set_defaults(fn=cmd_series)
 
     pv = sub.add_parser("providers", help="list model providers and environment configuration")
     pv.set_defaults(fn=cmd_providers)
