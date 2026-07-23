@@ -61,6 +61,24 @@ class ProbeSet:
     def counts(self) -> dict:
         return self.vintages
 
+    @property
+    def vintage_hashes(self) -> dict:
+        """Content hash per vintage, order-independent.
+
+        The longitudinal contract: once a vintage label has been measured, its questions are
+        frozen — re-running "t0" with edited probes would silently change the measurand. The
+        registry enforces that by comparing these hashes across runs; new vintage labels may
+        be added, existing ones must hash identically forever.
+        """
+        buckets: dict[str, list[str]] = {}
+        for p in self.probes:
+            clean = {k: v for k, v in p.items() if not k.startswith("_")}
+            buckets.setdefault(p["vintage"], []).append(json.dumps(clean, sort_keys=True))
+        return {
+            v: hashlib.sha256("\n".join(sorted(rows)).encode("utf-8")).hexdigest()
+            for v, rows in buckets.items()
+        }
+
     def post_cutoff_share(self, training_cutoff: str) -> dict:
         """Per-vintage share of probes whose source_date post-dates the model's cutoff.
 
