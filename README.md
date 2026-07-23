@@ -60,10 +60,9 @@ the exact conditional Beta dispersion printed beside it) · **subgroup-stratifie
 (length buckets always, metadata axes when the corpus carries them; every rate with a bootstrap
 interval, rates on fewer than 20 samples withheld — counts speak instead) · **base-rate
 arithmetic in every report** (FPR × your volume = wrongly flagged per year, plus PPV at assumed
-prevalences — the calculation Vanderbilt published when it disabled its detector) · **Binoculars as detector #2** (released-implementation construction, both models quant-verified on the receipt; the paper's global thresholds measured at 16%/3% FPR on the reference corpus — calibrate in-domain, with receipts) · **quantization A/B receipts** (measured: 4-bit moves the 1%-FPR threshold ~10% where fp32-vs-fp16 agree to four decimals — quantization is an instrument parameter) · the probe runner, run registry, P(True)/ECE, and drift monitors of the longitudinal apparatus (see RUNBOOK Workflow B).
+prevalences — the calculation Vanderbilt published when it disabled its detector) · **Binoculars as detector #2** (released-implementation construction, both models quant-verified on the receipt; the paper's global thresholds measured at 16%/3% FPR on the reference corpus — calibrate in-domain, with receipts) · **quantization A/B receipts** (measured: 4-bit moves the 1%-FPR threshold ~10% where fp32-vs-fp16 agree to four decimals — quantization is an instrument parameter) · the probe runner, run registry, P(True)/ECE, and drift monitors of the longitudinal apparatus (see RUNBOOK Workflow B) · providers local-hf / llama.cpp / **ollama** (attestation earned per artifact — GGUF sha256; ollama's manifest+weights chain re-hashed by gaige itself) · **`gaige plan`** (what this machine can run, at measured cost, with attestation — no quality column, deliberately: separation lives in receipts).
 
-Next (research-ranked — see PROGRESS.md): the falcon-7b fp16 A/B arm (needs a daemon-free
-window) · per-subgroup conformal thresholds (Mondrian; the
+Next (research-ranked — see PROGRESS.md): per-subgroup conformal thresholds (Mondrian; the
 guarantee-backed version of group-adaptive thresholding, needs larger calibration sets) ·
 adversarial degradation panels · RAID/TH-Bench corpus adapters · watermark-verifier adapter ·
 drift canaries (does your instrument still measure what it measured last term?).
