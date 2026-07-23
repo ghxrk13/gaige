@@ -34,6 +34,18 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, fifth pass — apparatus Phase C: the warning light works.** M3 is real:
+P(True) read from logits under a versioned, fingerprinted, series-frozen template; ECE and
+the confidence-accuracy gap per vintage in a new `probcal` module (deliberately not
+`calibrate.py` — that trap stays documented). Property-tested with a controllable fake
+self-assessor (every number hand-computable through the full runner; injected
+miscalibration recovered; ECE teeth proven by breaking the binning once). Semantics done
+carefully: M3 riding along does not fork a series, but the template freezes per series the
+first time M3 runs. And the first live measurement wrote the thesis's sentence by itself:
+gpt2 at **0% accuracy, 79% mean P(True), gap +79%** — fluent and authoritative whilst
+quietly wrong, measured. Tests 89 → 98. Remaining: Phase D (change detectors + the
+real-model e2e).
+
 **Same day, fourth pass — apparatus Phase B: the validity backbone exists.** The run
 registry keys every probe run to its instrument-identity hash: a changed instrument forks a
 new series (never mixes), a measured vintage is frozen forever (an edited "t0" is refused by

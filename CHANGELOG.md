@@ -68,6 +68,28 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, apparatus Phase C — M3, calibration drift)
+
+- **P(True)** (`gaige/ptrue.py`): Kadavath-style self-assessment read from logits via the
+  provider option_logprobs capability — deterministic forward pass, no sampling. The prompt
+  template is versioned (`ptrue-1`) and sha256-hashed into the instrument fingerprint;
+  resuming a run with `--ptrue` toggled refuses, and the registry FREEZES the template per
+  series once M3 has been measured (a changed template refuses at registration — gaps
+  across templates are not comparable). Toggling M3 on/off does not fork a series: the M1
+  instrument is untouched.
+- **Probability calibration** (`gaige/probcal.py` — deliberately NOT `calibrate.py`; that
+  module is decision thresholds, this one is probability calibration, and the name overlap
+  is a documented trap): ECE with the per-bin table, bootstrap CI over (confidence,
+  correctness) pairs, and the confidence-accuracy gap. Bin count fixed per series.
+- `gaige probe run --ptrue` wires M3 into probe receipts (per-vintage table) and series
+  reports (gap beside each accuracy cell).
+- Tests: 89 → 98. The ECE hand-case is exact (teeth proven: a one-bin off-by-one turned
+  the suite red before being reverted); a controllable fake self-assessor makes every M3
+  number hand-computable through the full runner; an injected 0.25 confidence inflation is
+  recovered as ECE ≈ 0.25 by property test.
+- First live M3 measurement (gpt2, toy probes): accuracy 0%, mean P(True) 79%, gap +79% —
+  the failure mode the longitudinal apparatus instruments, produced by the smoke test.
+
 ### Changed (2026-07-22, analysis-layer performance — an instrument change, stated)
 
 - **Bootstrap vectorized in pure numpy** (no new dependency; the deliberate alternative to a
