@@ -292,29 +292,69 @@ def cmd_probe_run(args) -> int:
         f"--max-new-tokens {args.max_new_tokens} --n-boot {args.n_boot} --seed {args.seed}"
     )
 
-    outdir = (
-        Path(args.resume).resolve()
-        if args.resume
-        else Path(args.root).resolve() / "reports" / f"{_dt.now():%Y%m%d-%H%M%S}-probes"
-    )
-    results = run_probes(
-        probeset,
-        provider,
-        decoding,
-        cutoff=args.cutoff,
-        outdir=outdir,
-        n_boot=args.n_boot,
-        seed=args.seed,
-        resume=bool(args.resume),
-        reproduce_cmd=reproduce,
-    )
-    print(f"\n[receipt] {outdir / 'report.md'}")
-    for v, d in sorted(results["by_vintage"].items()):
-        ci = d.get("accuracy_ci")
-        ci_s = f" (CI {ci[0]:.1%}-{ci[1]:.1%})" if ci else ""
-        print(f"[receipt] vintage {v}: accuracy {d['accuracy']:.1%} n={d['n']}{ci_s}")
-    for v, d in sorted(results["post_cutoff_share"].items()):
-        print(f"[receipt] vintage {v}: post-cutoff {d['post_cutoff']}/{d['n']} ({d['share']:.0%})")
+    if args.resume and args.replicates > 1:
+        raise SystemExit("--resume continues ONE run directory; do not combine with --replicates")
+    n_reps = max(1, args.replicates)
+    base = Path(args.root).resolve() / "reports" / f"{_dt.now():%Y%m%d-%H%M%S}-probes"
+    reg_dir = Path(args.registry) if args.registry else Path(args.root).resolve() / "registry"
+
+    for i in range(1, n_reps + 1):
+        if args.resume:
+            outdir = Path(args.resume).resolve()
+        elif n_reps == 1:
+            outdir = base
+        else:
+            outdir = Path(f"{base}-r{i}")
+        results = run_probes(
+            probeset,
+            provider,
+            decoding,
+            cutoff=args.cutoff,
+            outdir=outdir,
+            n_boot=args.n_boot,
+            seed=args.seed,
+            resume=bool(args.resume),
+            reproduce_cmd=reproduce,
+        )
+        print(f"\n[receipt] {outdir / 'report.md'}")
+        for v, d in sorted(results["by_vintage"].items()):
+            ci = d.get("accuracy_ci")
+            ci_s = f" (CI {ci[0]:.1%}-{ci[1]:.1%})" if ci else ""
+            print(f"[receipt] vintage {v}: accuracy {d['accuracy']:.1%} n={d['n']}{ci_s}")
+        for v, d in sorted(results["post_cutoff_share"].items()):
+            print(
+                f"[receipt] vintage {v}: post-cutoff {d['post_cutoff']}/{d['n']} ({d['share']:.0%})"
+            )
+        if args.register:
+            from . import registry as registry_mod
+
+            series = registry_mod.record_run(reg_dir, outdir, replicate=n_reps > 1)
+            print(
+                f"[series] {series['series_id']}: {len(series['runs'])} run(s) -> "
+                f"{Path(reg_dir) / series['series_id'] / 'series-report.md'}"
+            )
+    return 0
+
+
+def cmd_series(args) -> int:
+    from . import registry as registry_mod
+
+    reg = Path(args.registry)
+    if args.series_cmd == "list":
+        rows = registry_mod.list_series(reg)
+        if not rows:
+            print(f"(no series under {reg})")
+            return 0
+        for s in rows:
+            print(
+                f"{s['series_id']}  {s['provider']}:{s['model']}  runs={s['runs']}  "
+                f"vintages={','.join(s['vintages'])}"
+            )
+        return 0
+    p = reg / args.id / "series-report.md"
+    if not p.exists():
+        raise SystemExit(f"no series {args.id!r} under {reg} (try: gaige series list)")
+    print(p.read_text(encoding="utf-8"))
     return 0
 
 
@@ -476,14 +516,39 @@ def main(argv=None) -> int:
     prr.add_argument("--max-new-tokens", type=int, default=64)
     prr.add_argument("--n-boot", type=int, default=1000)
     prr.add_argument("--seed", type=int, default=17, help="bootstrap seed")
-    prr.add_argument("--root", default=".", help="project root holding reports/")
+    prr.add_argument("--root", default=".", help="project root holding reports/ and registry/")
     prr.add_argument("--resume", help="continue an interrupted probe run directory")
     prr.add_argument(
         "--allow-remote-text",
         action="store_true",
         help="explicit opt-in to send prompts to a NON-local endpoint; never the default",
     )
+    prr.add_argument(
+        "--register",
+        action="store_true",
+        help="record the completed run(s) in the series registry (instrument-keyed)",
+    )
+    prr.add_argument(
+        "--registry", default=None, help="registry directory (default: <root>/registry)"
+    )
+    prr.add_argument(
+        "--replicates",
+        type=int,
+        default=1,
+        help="run the probe set k times (the Day-0 variance-bound protocol); implies "
+        "replicate-tagged runs when k>1",
+    )
     prr.set_defaults(fn=cmd_probe_run)
+
+    se = sub.add_parser("series", help="the run registry: list series, show a series report")
+    se_sub = se.add_subparsers(dest="series_cmd", required=True)
+    sl = se_sub.add_parser("list", help="list registered series")
+    sl.add_argument("--registry", default="registry")
+    sl.set_defaults(fn=cmd_series)
+    ss = se_sub.add_parser("show", help="print a series report")
+    ss.add_argument("id")
+    ss.add_argument("--registry", default="registry")
+    ss.set_defaults(fn=cmd_series)
 
     pv = sub.add_parser("providers", help="list model providers and environment configuration")
     pv.set_defaults(fn=cmd_providers)

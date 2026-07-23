@@ -148,8 +148,10 @@ def run_probes(
 
     results = {
         "gaige_version": _version(),
+        "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "by_vintage": vintage_accuracy(rows, n_boot=n_boot, seed=seed),
         "post_cutoff_share": probeset.post_cutoff_share(cutoff),
+        "vintage_hashes": probeset.vintage_hashes,
         "n_boot": n_boot,
         "instrument": instrument,
     }
