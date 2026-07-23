@@ -20,7 +20,7 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 **bench (the reference environment — do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
-./.venv/bin/python -m pytest tests/ -q          # expect: 89 passed
+./.venv/bin/python -m pytest tests/ -q          # expect: 109 passed
 ```
 The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13.0 / py 3.12.3.
 **transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
@@ -30,7 +30,7 @@ fp16, which changes scores. gaige refuses such a load, but the pin avoids the fi
 ```
 cd %USERPROFILE%\personal\gaige
 python -m pip install -e .
-python -m pytest tests/ -q                      # expect: 89 passed
+python -m pytest tests/ -q                      # expect: 109 passed
 ```
 
 ## 2. Workflow A — calibrate a detector, then score documents
@@ -270,7 +270,7 @@ mentions them.
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 89 passed
+python -m pytest tests/ -q          # 109 passed
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/
