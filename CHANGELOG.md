@@ -68,6 +68,23 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Changed (2026-07-22, analysis-layer performance — an instrument change, stated)
+
+- **Bootstrap vectorized in pure numpy** (no new dependency; the deliberate alternative to a
+  numba suggestion, which was rejected: an LLVM dependency against the numpy-only core, and
+  parallel reductions reorder floats). Resample index matrices are drawn in one rng call per
+  class; a new `calibrate.proportion_ci` fully vectorizes the indicator-mean hot path now
+  used for TPR-at-threshold, per-subgroup rates, and probe accuracy. **Measured** (n_boot
+  =1000): auroc-CI 0.17s→0.04s at n=200 and 7.93s→0.86s at n=10k (9.2×); proportion path
+  0.02s→0.001s (20×). The auroc rows still sort per resample — the next lever at RAID scale.
+- **Honesty accounting:** the vectorized draw is a different random stream, so bootstrap CI
+  values shift slightly — AUROC and every threshold are deterministic and verified UNCHANGED
+  (the re-pin script hard-asserts them before touching the fixture). Reference pin
+  re-measured: auroc_ci [0.9458, 0.9938] → **[0.9448, 0.9929]**; both tpr_ci values landed
+  identical. The auroc midrank tie-loop was also vectorized — that one is exact math,
+  asserted value-identical against the old implementation (ties included) in tests.
+- Tests: 87 → 89.
+
 ### Added (2026-07-22, apparatus Phase B)
 
 - **The run registry** (`gaige/registry.py`) — the validity backbone: runs land in a series

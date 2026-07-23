@@ -20,7 +20,7 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 **bench (the reference environment — do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
-./.venv/bin/python -m pytest tests/ -q          # expect: 64 passed
+./.venv/bin/python -m pytest tests/ -q          # expect: 89 passed
 ```
 The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13.0 / py 3.12.3.
 **transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
@@ -30,7 +30,7 @@ fp16, which changes scores. gaige refuses such a load, but the pin avoids the fi
 ```
 cd %USERPROFILE%\personal\gaige
 python -m pip install -e .
-python -m pytest tests/ -q                      # expect: 64 passed
+python -m pytest tests/ -q                      # expect: 89 passed
 ```
 
 ## 2. Workflow A — calibrate a detector, then score documents
@@ -49,7 +49,7 @@ so it cannot rot while other capabilities get built.
 **Correct output ends with (measured 2026-07-22 on the pinned env):**
 ```
 [receipt] reports/<timestamp>-fast-detect-gpt/report.md
-[receipt] AUROC 0.9720 (CI 0.9458-0.9938)
+[receipt] AUROC 0.9720 (CI 0.9448-0.9929)
 [receipt] @FPR<=1%: thr=2.1229 FPRcal=1.000% (in-sample) TPR=86.0%
 [receipt] @FPR<=5%: thr=1.8319 FPRcal=5.000% (in-sample) TPR=91.0%
 [receipt] conformal a=0.05: thr=1.8468 TPR=90.0% (marginal FPR guarantee <= 0.05)
@@ -180,7 +180,7 @@ this file mentions them.
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 64 passed
+python -m pytest tests/ -q          # 89 passed
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/
