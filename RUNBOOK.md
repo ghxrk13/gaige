@@ -218,12 +218,36 @@ identity match · t0 accuracy 75% (n=12), t1 50% (n=8), 100% post-cutoff · repl
 variance" · a temperature-0.3 run **forked its own series** rather than mixing. Receipt of
 record: `private-notes/research/first-longitudinal-receipt-2026-07-22.md`.
 
-### 3e. Not built yet
+### 3e. M5 — drift monitors over a series (built 2026-07-22)
 
-Change detectors (Page-Hinkley/CUSUM + conformal per-interval alarms → detection latency +
-false-alarm rate, M5) are **post-pilot by design** (longitudinal spec section 7, items 8-9): M5
-replays registered series, so it loses nothing by waiting for real series to exist. Do not
-assume it works because this file mentions it.
+```bash
+python -m gaige.cli series watch <series-id> --registry registry \
+    [--vintage t0] [--quantity accuracy|gap] [--alpha 0.2] [--direction down|up]
+```
+
+Replays a registered series through the monitor panel — no model touched. Three monitors,
+graded honestly:
+- **conformal-interval** — per-interval alarm with a **marginal finite-sample false-alarm
+  bound** (≤ α per look; expected false alarms = α × looks), calibrated on the Day-0
+  replicates. Needs `ceil(1/α)−1` zero-drift reference intervals: **α=0.2 needs 4 — one
+  more replicate than the k=3 Day-0 default**, so run Day-0 with `--replicates 4` if you
+  want conformal alarms from the start. Refuses honestly below that.
+- **page-hinkley** and **cusum** — the drift-literature detectors (Gama/Webb lineage),
+  cumulative statistics with tuning constants (δ/λ, k/h) recorded on the receipt and **no
+  guarantee claimed** (interval exchangeability does not apply to a cumulative statistic;
+  conformal test martingales are the principled extension, future work).
+
+Output prints and lands as `monitors-report.md` in the series directory. `monitors.evaluate`
+scores any monitor against a known onset (detection latency + false alarms) — M5's
+per-technique scorecard, exercised in tests with injected shifts. Verified live on the
+first real series: conformal refused at n=3 reference (correct), PH/CUSUM quiet on a
+within-variance interval (correct).
+
+### 3f. Not built yet
+
+M2r (probe-source drift index) awaits an external rescope sign-off; Mondrian conformal and
+batched scoring stay banked per the map. Do not assume they work because this file
+mentions them.
 
 ## 4. Checks you can run any time
 
