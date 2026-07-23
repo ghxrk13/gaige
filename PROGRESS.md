@@ -34,6 +34,19 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, eighth pass — Burst 2b: the public line ships its two receipts.** Binoculars
+landed the way a measurement tool should land a detector: construction verified against
+the released implementation BEFORE coding, tokenizer-identity refusal, both models
+quant-proven on one fingerprint (256 Linear4bit, 8.07 GB — the VRAM ceiling beside the
+daemon, measured 12.9/16.4 at peak). First receipt on the reference corpus: AUROC 0.9992,
+TPR 97% @1%FPR, conformal α=.01 → 95%. Then the two flagship findings, both in-house now:
+(1) **the paper's own global thresholds run at 16% and 3% FPR on our corpus** — RAID's
+"calibrate in-domain" reproduced on the strongest zero-shot detector by our own tooling;
+(2) **the quant A/B**: fp32-cpu vs fp16-cuda agree on thr@1% to four decimals, while 4-bit
+moves it ~10% — quantization is an instrument parameter, and there is finally a receipt
+that says so (falcon fp16 arm deferred to a daemon-free window). Tests 105 → 109. The
+build queue's public line (items 1-4 + 8) is now DONE.
+
 **Same day, seventh pass — M5: the battery is COMPLETE.** the operator pulled the change detectors
 forward, and they were the right shape to pull: monitors replay registered series, so the
 evening's real series became their first input. Per-interval conformal alarms carry the
