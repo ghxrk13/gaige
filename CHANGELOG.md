@@ -68,6 +68,21 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, apparatus Phase D — the real-model e2e; the apparatus burst is COMPLETE)
+
+- `probes/demo.jsonl`: a committed, clean-room, 20-probe general-knowledge demo set in the
+  signed schema (two vintages, aliases, provenance dates) — the documented material for
+  smoke tests and the RUNBOOK walk-through.
+- First REAL longitudinal series, run live (receipt of record in private-notes): Qwen2.5-1.5B
+  q4_k_m served by llama.cpp b10091 on CPU, attestation **verified** (GGUF sha256 matched
+  the server's reported artifact — the sharpened attestation design working on real
+  infrastructure, first try); Day-0 replicates measured the variance bound at ±0.0% (served
+  greedy decoding is deterministic — measured, not assumed); follow-up run within variance;
+  a temperature change forked its own series live. Qwen is the staged non-gated fallback
+  for the gated Llama-3.2-1B the spec names.
+- `registry/` added to .gitignore (measurement state is machine-local; receipts of record
+  are copied into private-notes deliberately).
+
 ### Added (2026-07-22, apparatus Phase C — M3, calibration drift)
 
 - **P(True)** (`gaige/ptrue.py`): Kadavath-style self-assessment read from logits via the

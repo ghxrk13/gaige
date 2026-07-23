@@ -192,11 +192,38 @@ toggled refuses, and a changed template refuses at registration.
 First live measurement (gpt2 on the toy set): **accuracy 0%, mean P(True) ~79%, gap +79%** —
 "fluent and authoritative whilst quietly wrong," demonstrated by the smoke test itself.
 
-### 3d. Not built yet
+### 3d. The real-model apparatus (run live 2026-07-22)
 
-Change detectors (Page-Hinkley/CUSUM + conformal alarms, M5) and the real-model e2e —
-Phase D of `private-notes/queue/apparatus-burst-staging.md`. Do not assume they work because
-this file mentions them.
+llama.cpp release binary at `~/personal/llamacpp/llama-b10091/` (bench); GGUF weights in
+`~/personal/models/`. The full loop, as actually run:
+
+```bash
+# serve (CPU is fine for 1-2B; healthy in ~3s)
+~/personal/llamacpp/llama-b10091/llama-server \
+    -m ~/personal/models/qwen2.5-1.5b-instruct-q4_k_m.gguf --port 8089 --host 127.0.0.1 -t 8 &
+# prove the endpoint + earn the attestation BEFORE a long run
+python -m gaige.cli test-connection --endpoint http://127.0.0.1:8089 --gguf ~/personal/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+# Day-0: replicates -> measured variance bound, registered
+python -m gaige.cli probe run --probes probes/demo.jsonl --provider llamacpp \
+    --endpoint http://127.0.0.1:8089 --gguf ~/personal/models/qwen2.5-1.5b-instruct-q4_k_m.gguf \
+    --cutoff 2023-10-01 --max-new-tokens 12 --register --replicates 3
+# later intervals: single runs into the same series
+python -m gaige.cli probe run ... --register
+```
+
+Measured on the first live series (Qwen2.5-1.5B q4_k_m, the non-gated stand-in for the
+gated Llama-3.2-1B the spec names): attestation **verified** by GGUF sha256 + server
+identity match · t0 accuracy 75% (n=12), t1 50% (n=8), 100% post-cutoff · replicate bound
+**±0.0% — served greedy decoding is deterministic, measured** · follow-up run "within run
+variance" · a temperature-0.3 run **forked its own series** rather than mixing. Receipt of
+record: `private-notes/research/first-longitudinal-receipt-2026-07-22.md`.
+
+### 3e. Not built yet
+
+Change detectors (Page-Hinkley/CUSUM + conformal per-interval alarms → detection latency +
+false-alarm rate, M5) are **post-pilot by design** (longitudinal spec section 7, items 8-9): M5
+replays registered series, so it loses nothing by waiting for real series to exist. Do not
+assume it works because this file mentions it.
 
 ## 4. Checks you can run any time
 
