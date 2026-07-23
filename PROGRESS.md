@@ -34,6 +34,21 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, sixth pass — Phase D: the apparatus is REAL, end to end.** llama.cpp b10091 +
+Qwen2.5-1.5B GGUF (the staged non-gated stand-in for the gated Llama-3.2-1B), served on
+CPU, and every design decision met reality without flinching: `test-connection` earned
+**verified** attestation on the first try (GGUF sha256 matched the server's reported
+artifact); the Day-0 protocol measured the run-variance bound at **±0.0% on a SERVED
+model** — greedy llama.cpp is deterministic, now a measured fact; the follow-up run landed
+"within run variance"; and a temperature-0.3 run forked its own series live instead of
+mixing. t0 75% / t1 50% under the signed grading rule, 100% post-cutoff. **The apparatus
+burst — staged this evening as four phases — is complete in one session**: probe sets with
+provenance → graded answers → attested providers → registered series → measured variance
+bounds → M3's warning light. What remains before the pilot is the operator's side (real probe
+authoring, HF Llama access, external sign-offs) and the post-pilot M5 detectors, which replay
+registered series and lose nothing by waiting. Receipt of record:
+`private-notes/research/first-longitudinal-receipt-2026-07-22.md`.
+
 **Same day, fifth pass — apparatus Phase C: the warning light works.** M3 is real:
 P(True) read from logits under a versioned, fingerprinted, series-frozen template; ECE and
 the confidence-accuracy gap per vintage in a new `probcal` module (deliberately not
