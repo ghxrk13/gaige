@@ -128,6 +128,20 @@ def record_run(registry_dir: Path, run_dir: Path, replicate: bool = False) -> di
             "runs": [],
         }
 
+    # M3 constancy: toggling P(True) on/off does not fork (the M1 instrument is unchanged —
+    # option_logprobs are separate forward passes), but once a series has measured M3 under
+    # one template, later M3 runs must use THAT template or gaps/ECEs are not comparable.
+    run_ptrue = results["instrument"].get("ptrue")
+    if run_ptrue is not None:
+        stored_pt = series.get("ptrue")
+        if stored_pt is not None and stored_pt != run_ptrue:
+            raise SeriesMismatch(
+                f"ptrue template changed: series measured M3 under {stored_pt}, this run "
+                f"used {run_ptrue}. Confidence numbers across templates are not comparable; "
+                "a changed template needs its own series."
+            )
+        series["ptrue"] = run_ptrue
+
     series["vintage_hashes"].update(results["vintage_hashes"])
     series["runs"].append(
         {
@@ -194,7 +208,13 @@ def write_series_report(series_dir: Path, series: dict) -> Path:
         cells = []
         for v in vintages:
             d = r["by_vintage"].get(v)
-            cells.append(f"{d['accuracy']:.1%} (n={d['n']})" if d else "—")
+            if d:
+                cell = f"{d['accuracy']:.1%} (n={d['n']})"
+                if "m3" in d:
+                    cell += f" · gap {d['m3']['gap']:+.1%}"
+                cells.append(cell)
+            else:
+                cells.append("—")
         lines.append(
             f"| {r['generated_utc'] or '?'} | {'yes' if r['replicate'] else ''} | "
             + " | ".join(cells)

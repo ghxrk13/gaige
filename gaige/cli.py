@@ -290,6 +290,7 @@ def cmd_probe_run(args) -> int:
         f"gaige probe run --probes {args.probes} --provider {args.provider}{resolved_bits} "
         f"--cutoff {args.cutoff} --temperature {args.temperature:g} "
         f"--max-new-tokens {args.max_new_tokens} --n-boot {args.n_boot} --seed {args.seed}"
+        + (" --ptrue" if args.ptrue else "")
     )
 
     if args.resume and args.replicates > 1:
@@ -315,12 +316,19 @@ def cmd_probe_run(args) -> int:
             seed=args.seed,
             resume=bool(args.resume),
             reproduce_cmd=reproduce,
+            with_ptrue=args.ptrue,
         )
         print(f"\n[receipt] {outdir / 'report.md'}")
         for v, d in sorted(results["by_vintage"].items()):
             ci = d.get("accuracy_ci")
             ci_s = f" (CI {ci[0]:.1%}-{ci[1]:.1%})" if ci else ""
             print(f"[receipt] vintage {v}: accuracy {d['accuracy']:.1%} n={d['n']}{ci_s}")
+            if "m3" in d:
+                m = d["m3"]
+                print(
+                    f"[receipt] vintage {v}: P(True) {m['mean_confidence']:.1%} "
+                    f"gap {m['gap']:+.1%} ECE {m['ece']:.3f}"
+                )
         for v, d in sorted(results["post_cutoff_share"].items()):
             print(
                 f"[receipt] vintage {v}: post-cutoff {d['post_cutoff']}/{d['n']} ({d['share']:.0%})"
@@ -522,6 +530,12 @@ def main(argv=None) -> int:
         "--allow-remote-text",
         action="store_true",
         help="explicit opt-in to send prompts to a NON-local endpoint; never the default",
+    )
+    prr.add_argument(
+        "--ptrue",
+        action="store_true",
+        help="also measure M3: Kadavath-style P(True) per answer (needs a provider with "
+        "option_logprobs; the P(True) template joins the instrument fingerprint)",
     )
     prr.add_argument(
         "--register",

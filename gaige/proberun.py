@@ -24,24 +24,36 @@ from pathlib import Path
 
 import numpy as np
 
-from . import calibrate, runstate
+from . import calibrate, probcal, ptrue, runstate
 from .grading import GRADING_VERSION, grade_free_text
 from .probes import ProbeSet
-from .providers.base import CAP_COMPLETE, Decoding, Provider, require
+from .providers.base import CAP_COMPLETE, CAP_OPTION_LOGPROBS, Decoding, Provider, require
 
-PROBE_FIELDS = ["id", "vintage", "response", "normalized", "correct", "seconds"]
+PROBE_FIELDS = ["id", "vintage", "response", "normalized", "correct", "ptrue", "seconds"]
 # Everything here changing mid-run means the second half was measured by a different
 # instrument. The whole provider metadata dict is pinned deliberately — strict beats sorry.
-PROBE_PINNED = ("provider", "decoding", "grading_version", "probes_sha256", "training_cutoff")
+PROBE_PINNED = (
+    "provider",
+    "decoding",
+    "grading_version",
+    "probes_sha256",
+    "training_cutoff",
+    "ptrue",
+)
 
 
-def probe_instrument(provider_meta: dict, decoding: Decoding, probeset, cutoff: str) -> dict:
+def probe_instrument(
+    provider_meta: dict, decoding: Decoding, probeset, cutoff: str, with_ptrue: bool = False
+) -> dict:
     return {
         "provider": provider_meta,
         "decoding": decoding.fingerprint(),
         "grading_version": GRADING_VERSION,
         "probes_sha256": probeset.sha256,
         "training_cutoff": cutoff,
+        # The P(True) template is an instrument component when M3 runs; toggling it or
+        # changing the template mid-series is a fork, so it is pinned like everything else.
+        "ptrue": ptrue.template_fingerprint() if with_ptrue else None,
     }
 
 
@@ -59,6 +71,7 @@ def _load_partial(outdir: Path) -> dict[str, dict]:
                     "response": row["response"],
                     "normalized": row["normalized"],
                     "correct": row["correct"] == "True",
+                    "ptrue": float(row["ptrue"]) if row.get("ptrue") not in (None, "") else "",
                     "seconds": float(row["seconds"]) if row.get("seconds") else "",
                 }
             except (KeyError, TypeError, ValueError):
@@ -78,6 +91,25 @@ def vintage_accuracy(rows: list[dict], n_boot: int = 1000, seed: int = 17) -> di
     return out
 
 
+def m3_by_vintage(
+    rows: list[dict], n_bins: int = probcal.DEFAULT_BINS, n_boot: int = 1000, seed: int = 17
+) -> dict:
+    """Per-vintage M3: mean P(True), confidence-accuracy gap, ECE with CI."""
+    out: dict = {}
+    for v in sorted({r["vintage"] for r in rows}):
+        conf = np.array([r["ptrue"] for r in rows if r["vintage"] == v], dtype=np.float64)
+        corr = np.array([float(r["correct"]) for r in rows if r["vintage"] == v], dtype=np.float64)
+        e = probcal.ece(conf, corr, n_bins=n_bins)
+        out[v] = {
+            "mean_confidence": float(conf.mean()),
+            "gap": probcal.confidence_accuracy_gap(conf, corr),
+            "ece": e["ece"],
+            "ece_ci": probcal.ece_ci(conf, corr, n_bins=n_bins, n_boot=n_boot, seed=seed),
+            "n_bins": n_bins,
+        }
+    return out
+
+
 def run_probes(
     probeset: ProbeSet,
     provider: Provider,
@@ -88,11 +120,14 @@ def run_probes(
     seed: int = 17,
     resume: bool = False,
     reproduce_cmd: str = "",
+    with_ptrue: bool = False,
     progress=print,
 ) -> dict:
     require(provider, CAP_COMPLETE)
+    if with_ptrue:
+        require(provider, CAP_OPTION_LOGPROBS)
     provider_meta = provider.metadata()
-    instrument = probe_instrument(provider_meta, decoding, probeset, cutoff)
+    instrument = probe_instrument(provider_meta, decoding, probeset, cutoff, with_ptrue)
 
     done: dict[str, dict] = {}
     if resume:
@@ -125,6 +160,11 @@ def run_probes(
                 "response": response,
                 "normalized": g["normalized_answer"],
                 "correct": g["correct"],
+                "ptrue": (
+                    round(ptrue.ptrue_score(provider, probe["prompt"], response), 6)
+                    if with_ptrue
+                    else ""
+                ),
                 "seconds": round(time.time() - t0, 3),
             }
             runstate.append_row(fh, writer, row)
@@ -140,10 +180,14 @@ def run_probes(
         raise
     fh.close()
 
+    by_vintage = vintage_accuracy(rows, n_boot=n_boot, seed=seed)
+    if with_ptrue:
+        for v, m3 in m3_by_vintage(rows, n_boot=n_boot, seed=seed).items():
+            by_vintage[v]["m3"] = m3
     results = {
         "gaige_version": _version(),
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "by_vintage": vintage_accuracy(rows, n_boot=n_boot, seed=seed),
+        "by_vintage": by_vintage,
         "post_cutoff_share": probeset.post_cutoff_share(cutoff),
         "vintage_hashes": probeset.vintage_hashes,
         "n_boot": n_boot,
@@ -209,6 +253,26 @@ def write_probe_report(
         ci = d.get("accuracy_ci")
         ci_s = f"{ci[0]:.1%}–{ci[1]:.1%}" if ci else "—"
         lines.append(f"| {v} | {d['n']} | {d['accuracy']:.1%} | {ci_s} |")
+    m3_rows = {v: d["m3"] for v, d in results["by_vintage"].items() if "m3" in d}
+    if m3_rows:
+        pt = instrument["ptrue"]
+        lines += [
+            "",
+            "## M3 — calibration drift (P(True) vs accuracy)",
+            f"Kadavath-style P(True), template `{pt['version']}` (sha256 "
+            f"`{pt['template_sha256'][:16]}…`) — a forward-pass logit read, no sampling. "
+            "Positive gap = overconfident. Bin count is fixed per series.",
+            "",
+            "| vintage | mean P(True) | accuracy | gap (conf−acc) | ECE | ECE 95% CI |",
+            "|---|---|---|---|---|---|",
+        ]
+        for v, m in sorted(m3_rows.items()):
+            acc = results["by_vintage"][v]["accuracy"]
+            lo, hi = m["ece_ci"]
+            lines.append(
+                f"| {v} | {m['mean_confidence']:.1%} | {acc:.1%} | {m['gap']:+.1%} "
+                f"| {m['ece']:.3f} | {lo:.3f}–{hi:.3f} |"
+            )
     lines += [
         "",
         "## Honest caveats",
