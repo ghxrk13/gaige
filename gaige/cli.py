@@ -63,6 +63,16 @@ def _build_detector(args):
             device=args.device,
             model_auto_selected=auto,
         )
+    if args.detector == "binoculars":
+        from .detectors.binoculars import Binoculars
+
+        return Binoculars(
+            observer_id=args.observer,
+            performer_id=args.performer,
+            quant=args.quant,
+            max_tokens=args.max_tokens,
+            device=args.device,
+        )
     raise SystemExit(f"unknown detector: {args.detector}")
 
 
@@ -90,7 +100,10 @@ def cmd_run(args) -> int:
     else:
         outdir = root / "reports" / f"{datetime.now():%Y%m%d-%H%M%S}-{args.detector}"
 
-    print(f"[detector] loading {det.name} ({args.model}, {args.quant}, device={args.device})...")
+    model_desc = (
+        f"{args.observer} + {args.performer}" if args.detector == "binoculars" else args.model
+    )
+    print(f"[detector] loading {det.name} ({model_desc}, {args.quant}, device={args.device})...")
     det.load()
     print("[detector] loaded + quantization verified")
 
@@ -98,9 +111,14 @@ def cmd_run(args) -> int:
     # machine would silently swap instruments, which is the exact failure receipts exist to
     # prevent. Model is already resolved above for the same reason.
     resolved_device = det.metadata()["device"]
+    model_bits = (
+        f"--observer {args.observer} --performer {args.performer}"
+        if args.detector == "binoculars"
+        else f"--model {args.model}"
+    )
     reproduce = (
         f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
-        f"--detector {args.detector} --model {args.model} --quant {args.quant} "
+        f"--detector {args.detector} {model_bits} --quant {args.quant} "
         f"--device {resolved_device} --max-tokens {args.max_tokens}"
     )
     if resuming:
@@ -488,11 +506,23 @@ def main(argv=None) -> int:
     r.add_argument("--corpus", default="hc3-mini")
     r.add_argument("--n", type=int, default=100, help="per-class sample count for built-in corpora")
     r.add_argument("--seed", type=int, default=17)
-    r.add_argument("--detector", default="fast-detect-gpt")
+    r.add_argument(
+        "--detector", default="fast-detect-gpt", choices=["fast-detect-gpt", "binoculars"]
+    )
     r.add_argument(
         "--model",
         default=None,
-        help="scoring model; default is chosen per device (see --help output of run)",
+        help="scoring model (fast-detect-gpt); default is chosen per device",
+    )
+    r.add_argument(
+        "--observer",
+        default="tiiuae/falcon-7b",
+        help="binoculars observer model (must share a tokenizer with the performer)",
+    )
+    r.add_argument(
+        "--performer",
+        default="tiiuae/falcon-7b-instruct",
+        help="binoculars performer model",
     )
     r.add_argument(
         "--quant",
