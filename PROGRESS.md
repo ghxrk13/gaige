@@ -1,5 +1,17 @@
 # PROGRESS — gaige (yoto pattern)
 
+## 2026-07-23 — EER + Brier land in the receipt (additive analysis-layer change)
+- calibrate.eer: the FPR = FNR crossing on the measured ROC sweep, linearly interpolated
+  between adjacent measured points (interpolated FPR equals interpolated FNR by
+  construction). Reported in every analyze receipt (json + md) beside AUROC, with the
+  carried caveat that a crossing measured on one calibration sample does not transfer.
+- probcal.brier: the un-binned proper score beside ECE in the M3 per-vintage table
+  (0 perfect; 0.25 = always answering 0.5).
+- Reference instrument pin EXTENDED, not moved: AUROC/CIs/thresholds byte-identical;
+  the fixture now also pins EER 0.07 @ threshold 1.6398.
+- Tests 123 -> 130 (hand-computable EER/Brier cases survive the 50-per-class floor,
+  plus the new reference pin).
+
 ## 2026-07-22 — the statistical core: reviewed, fixed, wired, and property-tested
 
 **The adversarial review happened before the wiring**, in writing

@@ -70,6 +70,32 @@ def roc_points(scores: np.ndarray, labels: np.ndarray) -> dict:
     }
 
 
+def eer(scores: np.ndarray, labels: np.ndarray) -> dict:
+    """Equal error rate: the operating point where FPR meets FNR.
+
+    Walks the measured ROC sweep (thresholds descending, so FPR - FNR is
+    non-decreasing) and linearly interpolates between the two adjacent
+    measured points when the crossing falls between them — the interpolated
+    FPR and FNR are equal by construction, so the reported value is the exact
+    crossing of the interpolated curves, not a nearest-point approximation.
+    """
+    pts = roc_points(scores, labels)
+    fpr = np.asarray(pts["fpr"], dtype=np.float64)
+    fnr = 1.0 - np.asarray(pts["tpr"], dtype=np.float64)
+    thr = np.asarray(pts["thresholds"], dtype=np.float64)
+    d = fpr - fnr
+    if not np.any(d >= 0):  # degenerate: FNR above FPR across the whole sweep
+        return {"eer": float((fpr[-1] + fnr[-1]) / 2.0), "threshold": float(thr[-1])}
+    i = int(np.argmax(d >= 0))
+    if i == 0 or d[i] == 0:
+        return {"eer": float((fpr[i] + fnr[i]) / 2.0), "threshold": float(thr[i])}
+    w = float(d[i - 1] / (d[i - 1] - d[i]))
+    return {
+        "eer": float(fpr[i - 1] + w * (fpr[i] - fpr[i - 1])),
+        "threshold": float(thr[i - 1] + w * (thr[i] - thr[i - 1])),
+    }
+
+
 def threshold_at_fpr(scores: np.ndarray, labels: np.ndarray, target_fpr: float) -> dict:
     """Smallest threshold whose measured FPR on the human class is <= target.
 

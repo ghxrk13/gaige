@@ -76,3 +76,9 @@ def test_achieved_fpr_never_exceeds_target(results):
     """The core promise of a target-FPR threshold. If this fails the tool is lying."""
     for row in results["thresholds"]:
         assert row["achieved_fpr"] <= row["target_fpr"] + 1e-12
+
+
+def test_reference_eer_is_exact(results):
+    """EER 0.07 at threshold 1.6398 on the reference instrument (added 2026-07-23)."""
+    assert results["eer"] == EXPECTED["eer"]
+    assert results["eer_threshold"] == EXPECTED["eer_threshold"]

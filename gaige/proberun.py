@@ -105,6 +105,7 @@ def m3_by_vintage(
             "gap": probcal.confidence_accuracy_gap(conf, corr),
             "ece": e["ece"],
             "ece_ci": probcal.ece_ci(conf, corr, n_bins=n_bins, n_boot=n_boot, seed=seed),
+            "brier": probcal.brier(conf, corr)["brier"],
             "n_bins": n_bins,
         }
     return out

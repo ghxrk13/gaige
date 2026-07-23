@@ -105,3 +105,28 @@ def test_proportion_ci_deterministic_and_brackets():
     assert 2 * se < (hi - lo) < 6 * se  # width is binomial-plausible, not degenerate
     with pytest.raises(ValueError, match="at least one value"):
         calibrate.proportion_ci(np.array([]))
+
+
+def test_eer_perfect_separation_is_zero():
+    s, y = make([1.0] * 50, [5.0] * 50)
+    r = calibrate.eer(s, y)
+    assert r["eer"] == 0.0
+
+
+def test_eer_lands_on_measured_crossing():
+    # human = 50x1 + 50x3, ai = 50x2 + 50x4: at threshold 3 both error rates
+    # are exactly 0.5.
+    s, y = make([1.0] * 50 + [3.0] * 50, [2.0] * 50 + [4.0] * 50)
+    r = calibrate.eer(s, y)
+    assert r["eer"] == pytest.approx(0.5)
+    assert r["threshold"] == pytest.approx(3.0)
+
+
+def test_eer_interpolates_between_sweep_points():
+    # human = 75x0 + 25x10, ai = 100x5: FPR-FNR jumps -0.75 -> +0.25 between
+    # thresholds 10 and 5, so the crossing sits 3/4 of the way along, where the
+    # interpolated FPR (constant 0.25 on that segment) equals interpolated FNR.
+    s, y = make([0.0] * 75 + [10.0] * 25, [5.0] * 100)
+    r = calibrate.eer(s, y)
+    assert r["eer"] == pytest.approx(0.25)
+    assert r["threshold"] == pytest.approx(6.25)
