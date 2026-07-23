@@ -102,6 +102,49 @@ def test_new_vintage_label_is_welcome(tmp_path):
     assert sorted(s["vintage_hashes"]) == ["t0", "t1", "t2"]
 
 
+def test_ptrue_template_is_frozen_per_series(tmp_path):
+    """M3 riding along does not fork the series, but a changed P(True) template refuses."""
+    import json as _json
+
+    from gaige.providers.base import Decoding as _D
+    from tests.test_proberun import FakeProvider, right_answers
+
+    ps = make_set(tmp_path)
+    reg = tmp_path / "registry"
+    out1 = tmp_path / "pt1"
+    proberun.run_probes(
+        ps,
+        FakeProvider(right_answers(ps), conf=(0.8, 0.9)),
+        _D(),
+        cutoff="2024-06-01",
+        outdir=out1,
+        n_boot=50,
+        with_ptrue=True,
+        progress=lambda *_: None,
+    )
+    s = registry.record_run(reg, out1)
+    assert s["ptrue"]["version"] == "ptrue-1"
+    registry.record_run(reg, do_run(tmp_path, ps, "plain"))  # ptrue-off run joins, no fork
+    assert len(registry.list_series(reg)) == 1
+
+    out2 = tmp_path / "pt2"
+    proberun.run_probes(
+        ps,
+        FakeProvider(right_answers(ps), conf=(0.8, 0.9)),
+        _D(),
+        cutoff="2024-06-01",
+        outdir=out2,
+        n_boot=50,
+        with_ptrue=True,
+        progress=lambda *_: None,
+    )
+    r = _json.loads((out2 / "probe-results.json").read_text(encoding="utf-8"))
+    r["instrument"]["ptrue"]["template_sha256"] = "0" * 64  # simulate a changed template
+    (out2 / "probe-results.json").write_text(_json.dumps(r), encoding="utf-8")
+    with pytest.raises(registry.SeriesMismatch, match="ptrue template changed"):
+        registry.record_run(reg, out2)
+
+
 def test_replicates_measure_the_bound_and_movement_flags(tmp_path):
     ps = make_set(tmp_path)
     reg = tmp_path / "registry"
