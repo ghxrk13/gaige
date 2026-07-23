@@ -265,6 +265,38 @@ def write_series_report(series_dir: Path, series: dict) -> Path:
     return series_dir / "series-report.md"
 
 
+def vintage_sequences(series: dict, vintage: str, quantity: str = "accuracy") -> dict:
+    """Interval-value sequences for one vintage: zero-drift reference vs observed runs.
+
+    reference = replicate runs' values (the Day-0 zero-drift sample); observed = the
+    non-replicate runs in recorded order, with their timestamps as labels. Runs that lack
+    the vintage or the quantity (e.g. gap on a run without M3) are skipped, labels kept
+    aligned. quantity: "accuracy" or "gap" (M3 confidence-accuracy gap).
+    """
+
+    def q(run: dict):
+        d = run["by_vintage"].get(vintage)
+        if d is None:
+            return None
+        if quantity == "accuracy":
+            return d["accuracy"]
+        if quantity == "gap":
+            return d.get("m3", {}).get("gap")
+        raise ValueError(f"unknown quantity {quantity!r}: expected accuracy or gap")
+
+    reference = [v for r in series["runs"] if r["replicate"] and (v := q(r)) is not None]
+    observed, labels = [], []
+    for r in series["runs"]:
+        if r["replicate"]:
+            continue
+        v = q(r)
+        if v is None:
+            continue
+        observed.append(v)
+        labels.append(r.get("generated_utc", "?"))
+    return {"reference": reference, "observed": observed, "labels": labels}
+
+
 def list_series(registry_dir: Path) -> list[dict]:
     registry_dir = Path(registry_dir)
     out = []
