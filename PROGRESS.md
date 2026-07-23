@@ -34,6 +34,16 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, fourth pass — apparatus Phase B: the validity backbone exists.** The run
+registry keys every probe run to its instrument-identity hash: a changed instrument forks a
+new series (never mixes), a measured vintage is frozen forever (an edited "t0" is refused by
+name; new vintages are welcome — that IS the longitudinal design), and the Day-0 replicate
+protocol measures the run-variance bound instead of assuming one. Live e2e on the toy set:
+three replicates → bound ±0.0% ("zero means the pipeline is deterministic, which is a
+result, not an assumption"), follow-up run flagged "within run variance" — structurally,
+**the first longitudinal receipt**, the artifact shape the longitudinal spec describes. Tests 81 → 87.
+Remaining: P(True)/ECE (Phase C), change detectors + the real-model e2e (Phase D).
+
 **Same day, third pass — apparatus Phase A: the acquisition layer exists.** The provider
 seam (graded attestation: local-hf `verified` in-process; llamacpp earns
 verified/self-reported/opaque, with the GGUF-sha256 path so the longitudinal apparatus won't rest on
