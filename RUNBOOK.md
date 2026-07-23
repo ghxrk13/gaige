@@ -151,12 +151,31 @@ python -m gaige.cli providers                    # list providers + env config
 python -m gaige.cli test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
 ```
 
-### 3b. Not built yet
+### 3b. The run registry and series (built 2026-07-22)
 
-Run registry/series, replicates + variance bound, P(True)/ECE, change detectors — Phases
-B-D of `private-notes/queue/apparatus-burst-staging.md`. A single probe receipt is a POINT, not
-a series; movement claims need the registry. Do not assume any of it works because this
-file mentions it.
+```bash
+# Day-0: establish the run-variance bound with same-day replicates, registered
+python -m gaige.cli probe run --probes probes.jsonl --provider local-hf --model <m> \
+    --cutoff 2024-06-01 --register --replicates 3
+# Later intervals: single runs into the SAME series (same instrument, frozen vintages)
+python -m gaige.cli probe run --probes probes.jsonl ... --register
+python -m gaige.cli series list --registry registry
+python -m gaige.cli series show <series-id> --registry registry
+```
+
+A series is keyed by the instrument identity hash (provider identity + decoding + grading
+version + cutoff + gaige version). A changed instrument **forks a new series** — never
+mixes. Within a series, a vintage label is **frozen**: re-running an edited "t0" is refused
+by name (author a new vintage instead); NEW vintage labels are welcome — that is the
+longitudinal design. The series report shows accuracy per vintage per run, the measured
+run-variance bound from the replicates (±0.0% on a deterministic pipeline — a result, not
+an assumption), and flags each later run's movement as within-variance or BEYOND the bound.
+
+### 3c. Not built yet
+
+P(True)/ECE (M3) and the change detectors (Page-Hinkley/CUSUM + conformal alarms, M5) —
+Phases C-D of `private-notes/queue/apparatus-burst-staging.md`. Do not assume they work because
+this file mentions them.
 
 ## 4. Checks you can run any time
 

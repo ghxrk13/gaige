@@ -68,6 +68,25 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, apparatus Phase B)
+
+- **The run registry** (`gaige/registry.py`) — the validity backbone: runs land in a series
+  keyed by the hash of the instrument identity (provider identity minus attestation prose +
+  decoding block + grading version + cutoff + gaige version; identity is order-independent
+  and deliberately excludes the probe-file hash). A changed instrument **forks a new
+  series**, never mixes; within a series, **vintages are frozen** — an edited vintage label
+  is refused by name, new labels are welcome (the longitudinal design). `--register` on
+  `gaige probe run`, plus `gaige series list/show`.
+- **The Day-0 replicate protocol**: `--replicates k` runs the set k times and the series
+  report derives the per-vintage **run-variance bound** (2σ across replicates, measured —
+  ±0.0% on the greedy in-process pipeline, printed as a result rather than an assumption).
+  Every later run is flagged within-variance or BEYOND the bound: the pre-registered
+  movement rule from the longitudinal spec, mechanical.
+- The series report carries the fingerprint-constancy statement the spec pre-wrote for the
+  chapter: constancy is asserted mechanically, refused rather than compared.
+- Tests: 81 → 87 (identity order-independence + decoding sensitivity, fork-not-mix,
+  frozen-vintage refusal, new-vintage growth, bound measurement + movement flags).
+
 ### Added (2026-07-22, apparatus Phase A)
 
 - **The probe runner** — the acquisition layer the longitudinal spec's M1 metric needs:
