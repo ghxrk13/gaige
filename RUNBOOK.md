@@ -79,8 +79,10 @@ emits the NEGATED Binoculars ratio so higher = more AI-like), conformal α=.01 �
 Fingerprint proves BOTH models (256 Linear4bit, ~8.1 GB — the VRAM ceiling beside the
 daemon). The paper's global thresholds are deliberately not used: measured on this corpus
 they run at **16%** (accuracy-mode) and **3%** (low-FPR-mode) FPR — the receipts gap,
-demonstrated. Quant A/B receipt (gpt2-large): fp32-cpu and fp16-cuda agree to 4 decimals on
-thr@1%; **4-bit moves it ~10% (2.05→2.26)** — quantization is an instrument parameter.
+demonstrated. Quant A/B receipts, BOTH scales: gpt2-large fp32-vs-fp16 agree to 4 decimals on thr@1%
+while 4-bit moves it ~10%; **falcon-7b: 4-bit shifts thr@1% from 1.9540 (fp16) to 2.1229
+(~8.6%)** — measured 2026-07-22 in a clean daemon window (canary pre=post 0.0946, |Δ|=0).
+Quantization is an instrument parameter at 0.7B and at 7B.
 Detail: `private-notes/research/burst2b-receipts-2026-07-22.md`.
 
 **No GPU?** It still works, with a smaller model:

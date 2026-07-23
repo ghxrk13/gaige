@@ -82,8 +82,10 @@ first real release is staged in `pypi-stub/`.
 - **Quantization A/B receipts** (gpt2-large, one corpus, three instruments): fp32-cpu and
   fp16-cuda agree on the 1%-FPR threshold to FOUR decimals (2.0461 vs 2.0462); **4-bit
   moves it ~10% (→2.2580)** and costs a point of TPR. Quantization is an instrument
-  parameter, measured. The falcon-7b fp16 arm is deferred to a daemon-free window (fp16
-  needs ~13.7 GB; the production gate holds 4.8 of 16.4).
+  parameter, measured. **The falcon-7b fp16 arm was completed same night** in an
+  the operator-called daemon window (clean stop → run → restore; canary pre=post 0.0946, |Δ|=0):
+  **4-bit shifts the 7B flagship's 1%-FPR threshold from 1.9540 to 2.1229 (~8.6%)**, AUROC
+  CIs overlapping (no separation claim). The finding holds at both scales.
 - Tests: 105 → 109 (tokenizer-mismatch refusal via stubs, quant rules, protocol
   conformance, and a real-math CPU smoke on the gpt2+distilgpt2 shared-tokenizer pair —
   deterministic, negated, both models fingerprinted).
