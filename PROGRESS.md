@@ -11,6 +11,13 @@
   the fixture now also pins EER 0.07 @ threshold 1.6398.
 - Tests 123 -> 130 (hand-computable EER/Brier cases survive the 50-per-class floor,
   plus the new reference pin).
+- Cross-project lesson applied same day (knowledge only, no code crosses either way):
+  a reviewer on an unrelated codebase flagged the hand-kept-field-list class of bug in a
+  persistence step. gaige had the identical shape in receipts' results.json packing.
+  results.json is now a wholesale write contract ({k: v for k != "roc"}) with a guard
+  test that every computed key ships. Standalone-interface stance recorded: gaige stays
+  a standalone CLI that other pipelines call; integration = adapters (lm-eval-harness,
+  RAID queued), never entanglement. Tests 130 -> 131.
 
 ## 2026-07-22 — the statistical core: reviewed, fixed, wired, and property-tested
 

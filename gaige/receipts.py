@@ -207,18 +207,10 @@ def write_report(
     (outdir / "roc.json").write_text(json.dumps(results["roc"], indent=1), encoding="utf-8")
     (outdir / "results.json").write_text(
         json.dumps(
-            {
-                "gaige_version": results["gaige_version"],
-                "auroc": results["auroc"],
-                "auroc_ci": results["auroc_ci"],
-                "eer": results["eer"],
-                "eer_threshold": results["eer_threshold"],
-                "thresholds": results["thresholds"],
-                "conformal": results.get("conformal", []),
-                "subgroups": results.get("subgroups", {}),
-                "base_rate": results.get("base_rate", {}),
-                "n_boot": results["n_boot"],
-            },
+            # Wholesale write contract: everything compute_results emits ships,
+            # except roc, which is written as its own artifact above. A hand-kept
+            # key list here would silently drop a newly added statistic.
+            {k: v for k, v in results.items() if k != "roc"},
             indent=1,
         ),
         encoding="utf-8",

@@ -159,6 +159,23 @@ def test_rows_without_n_words_get_honest_unavailable(tmp_path):
     assert "unavailable" in res["subgroups"]
 
 
+def test_results_json_ships_every_computed_key(tmp_path):
+    """results.json is a wholesale write contract: every key compute_results emits lands
+    in the file, except roc, which ships as its own artifact. A hand-kept key list is
+    the same class of gap as a guard test that covers only one hop of a chain: a newly
+    added statistic passes its unit tests and still never reaches the receipt."""
+    import json as _json
+
+    from gaige.receipts import write_report
+
+    rows = synthetic_rows(60)
+    results = analyze.compute_results(rows, n_boot=100, seed=3)
+    out = tmp_path / "out"
+    write_report(out, analyze.UNKNOWN_CORPUS, dict(analyze.UNKNOWN_DETECTOR), rows, results, "t")
+    shipped = _json.loads((out / "results.json").read_text(encoding="utf-8"))
+    assert set(shipped.keys()) == set(results.keys()) - {"roc"}
+
+
 def test_report_is_utf8_on_every_platform(tmp_path):
     """Report text contains non-ASCII (arrows, en-dashes). Writing it must not depend on the
     platform's default codec — this exact bug crashed report writing on Windows (cp1252)."""
