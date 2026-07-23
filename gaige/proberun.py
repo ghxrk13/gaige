@@ -67,19 +67,13 @@ def _load_partial(outdir: Path) -> dict[str, dict]:
 
 
 def vintage_accuracy(rows: list[dict], n_boot: int = 1000, seed: int = 17) -> dict:
-    """Per-vintage accuracy with a bootstrap CI (single-class reuse of calibrate.bootstrap_ci)."""
+    """Per-vintage accuracy with a bootstrap CI (vectorized proportion path)."""
     out: dict = {}
     for v in sorted({r["vintage"] for r in rows}):
         correct = np.array([float(r["correct"]) for r in rows if r["vintage"] == v])
         entry: dict = {"n": int(len(correct)), "accuracy": float(correct.mean())}
         if len(correct) >= 2:
-            entry["accuracy_ci"] = calibrate.bootstrap_ci(
-                correct,
-                np.array(["human"] * len(correct)),
-                lambda s, lb: float(s.mean()),
-                n_boot=n_boot,
-                seed=seed,
-            )
+            entry["accuracy_ci"] = calibrate.proportion_ci(correct, n_boot=n_boot, seed=seed)
         out[v] = entry
     return out
 

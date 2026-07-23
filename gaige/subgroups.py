@@ -57,7 +57,7 @@ def _value(row: dict, key: str) -> str:
 
 
 def _rate_with_ci(
-    grp: list[dict], label: str, threshold: float, n_boot: int, seed: int
+    grp: list[dict], threshold: float, n_boot: int, seed: int
 ) -> tuple[float | None, tuple[float, float] | None]:
     """Flag rate for one subgroup's rows of one class, with a bootstrap CI — or a refusal.
 
@@ -67,16 +67,9 @@ def _rate_with_ci(
     """
     if len(grp) < MIN_SUBGROUP:
         return None, None
-    scores = np.array([g["score"] for g in grp], dtype=np.float64)
-    labels = np.array([label] * len(grp))
-    rate = float((scores >= threshold).mean())
-    ci = calibrate.bootstrap_ci(
-        scores,
-        labels,
-        lambda s, lb: float((s >= threshold).mean()),
-        n_boot=n_boot,
-        seed=seed,
-    )
+    flags = np.array([g["score"] >= threshold for g in grp], dtype=np.float64)
+    rate = float(flags.mean())
+    ci = calibrate.proportion_ci(flags, n_boot=n_boot, seed=seed)
     return rate, ci
 
 
@@ -105,8 +98,8 @@ def stratified_rates(
         for value, grp in sorted(groups.items()):
             h = [g for g in grp if g["label"] == "human"]
             a = [g for g in grp if g["label"] == "ai"]
-            fpr, fpr_ci = _rate_with_ci(h, "human", threshold, n_boot, seed)
-            tpr, tpr_ci = _rate_with_ci(a, "ai", threshold, n_boot, seed)
+            fpr, fpr_ci = _rate_with_ci(h, threshold, n_boot, seed)
+            tpr, tpr_ci = _rate_with_ci(a, threshold, n_boot, seed)
             per_value[value] = {
                 "n_human": len(h),
                 "n_ai": len(a),
