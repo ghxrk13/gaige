@@ -68,6 +68,28 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, late — ollama provider and `gaige plan`)
+
+- **Ollama provider** (`gaige/providers/ollama.py`): probe runs against any locally served
+  model, attestation EARNED the artifact way where possible. Ollama's store is a
+  content-addressed CHAIN — the `/api/tags` digest names the MANIFEST, the manifest's
+  model-layer digest names the weights blob — so gaige re-hashes BOTH with its own hands:
+  manifest hash must equal the server digest AND weights-blob hash must equal the
+  manifest's declared layer digest → `verified`. Digest reported but store unreadable
+  (remote endpoint, permissions) → `self-reported`; no digest → `opaque`; any mismatch
+  anywhere is reported loudly and never upgraded. COMPLETE only (no stable full-vocab
+  logprob API — MC control and P(True) stay on local-hf, same honesty as llamacpp).
+  First live receipt: qwen2.5:7b-instruct on bench, chain `verified` (weights sha256
+  `2bada8a745…`, 4.68 GB), 20 probes scored, series `10c246457f8d`.
+- **`gaige plan`**: what can THIS machine run, at what measured cost, with what
+  attestation. Inspects CPUs/RAM/CUDA-free-VRAM/ollama/llama-server, prints fits-now
+  verdicts against measured floors and runtime anchors that each NAME their receipt.
+  Deliberately no quality column — separation is a one-instrument-on-one-corpus property
+  that lives in receipts (the legend says so on every table, and a test enforces it).
+- Tests: 109 → 123 (9 ollama: full chain / manifest mismatch / weights mismatch / missing
+  blob / unreadable store / opaque / decoding-options mapping / serializable fingerprint;
+  5 plan: injected environments incl. cuda-tight and cpu-only, legend enforced).
+
 ### Added (2026-07-22, Burst 2b — detector #2 and the quantization A/B; the public line)
 
 - **Binoculars** (`gaige/detectors/binoculars.py`), construction verified against the

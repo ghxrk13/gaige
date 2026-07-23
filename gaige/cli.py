@@ -272,6 +272,17 @@ def _build_provider(args):
             model=args.model or os.environ.get("GAIGE_AI_MODEL", ""),
             gguf_path=args.gguf,
         )
+    if args.provider == "ollama":
+        from .providers.ollama import Ollama
+
+        if not args.model:
+            raise SystemExit(
+                "--model is required with --provider ollama (e.g. qwen2.5:7b-instruct)"
+            )
+        return Ollama(
+            endpoint=args.endpoint or os.environ.get("GAIGE_AI_ENDPOINT", "http://127.0.0.1:11434"),
+            model=args.model,
+        )
     raise SystemExit(f"unknown provider: {args.provider}")
 
 
@@ -304,6 +315,8 @@ def cmd_probe_run(args) -> int:
         resolved_bits = f" --endpoint {provider.endpoint}" + (
             f" --gguf {args.gguf}" if args.gguf else ""
         )
+    elif args.provider == "ollama":
+        resolved_bits = f" --model {args.model} --endpoint {provider.endpoint}"
     reproduce = (
         f"gaige probe run --probes {args.probes} --provider {args.provider}{resolved_bits} "
         f"--cutoff {args.cutoff} --temperature {args.temperature:g} "
@@ -444,12 +457,22 @@ def _cmd_series_watch(args, reg: Path, registry_mod) -> int:
     return 0
 
 
+def cmd_plan(_args) -> int:
+    from . import plan as plan_mod
+
+    env = plan_mod.inspect_environment()
+    print(plan_mod.render(env, plan_mod.build_plan(env)))
+    return 0
+
+
 def cmd_providers(_args) -> int:
     import os
 
     print("local-hf    in-process transformers load; attestation: verified")
     print("llamacpp    llama.cpp server via /v1; attestation graded: verified (with --gguf")
     print("            hash match) / self-reported (/props answers) / opaque")
+    print("ollama      local ollama server; attestation graded: verified (gaige re-hashes")
+    print("            the content-addressed blob) / self-reported (digest) / opaque")
     for var in ("GAIGE_AI_ENDPOINT", "GAIGE_AI_MODEL"):
         val = os.environ.get(var)
         print(f"{var}={val}" if val else f"{var} (unset)")
@@ -587,7 +610,7 @@ def main(argv=None) -> int:
     prr.add_argument(
         "--provider",
         default="local-hf",
-        choices=["local-hf", "llamacpp"],
+        choices=["local-hf", "llamacpp", "ollama"],
         help="local-hf = in-process (attestation verified); llamacpp = server via /v1",
     )
     prr.add_argument("--model", default=None, help="model id (local-hf) or served name (llamacpp)")
@@ -674,6 +697,13 @@ def main(argv=None) -> int:
         help="default: down for accuracy, up for gap",
     )
     sw.set_defaults(fn=cmd_series)
+
+    pl = sub.add_parser(
+        "plan",
+        help="what can THIS machine run, at what measured cost, with what attestation "
+        "(feasibility only — quality lives in receipts)",
+    )
+    pl.set_defaults(fn=cmd_plan)
 
     pv = sub.add_parser("providers", help="list model providers and environment configuration")
     pv.set_defaults(fn=cmd_providers)

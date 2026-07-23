@@ -20,7 +20,7 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 **bench (the reference environment — do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
-./.venv/bin/python -m pytest tests/ -q          # expect: 109 passed
+./.venv/bin/python -m pytest tests/ -q          # expect: 123 passed
 ```
 The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13.0 / py 3.12.3.
 **transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
@@ -30,7 +30,7 @@ fp16, which changes scores. gaige refuses such a load, but the pin avoids the fi
 ```
 cd %USERPROFILE%\personal\gaige
 python -m pip install -e .
-python -m pytest tests/ -q                      # expect: 109 passed
+python -m pytest tests/ -q                      # expect: 123 passed
 ```
 
 ## 2. Workflow A — calibrate a detector, then score documents
@@ -261,7 +261,44 @@ per-technique scorecard, exercised in tests with injected shifts. Verified live 
 first real series: conformal refused at n=3 reference (correct), PH/CUSUM quiet on a
 within-variance interval (correct).
 
-### 3f. Not built yet
+### 3f. Ollama provider (run live 2026-07-22)
+
+Probe runs against any model an ollama server already serves. COMPLETE only (no stable
+full-vocab logprob API — MC control and P(True) stay on local-hf).
+
+```bash
+python -m gaige.cli probe run --probes probes/demo.jsonl --provider ollama \
+    --model qwen2.5:7b-instruct --cutoff 2023-10-01 --max-new-tokens 12 --register
+```
+
+Attestation is earned per the content-addressed CHAIN: the `/api/tags` digest names the
+manifest; the manifest's model-layer digest names the weights blob; gaige re-hashes BOTH →
+`verified`. Store unreadable (remote, permissions) → `self-reported` (digest is still
+version-shaped identity); no digest → `opaque`; mismatch → loud, never upgraded. Store
+roots tried: `$OLLAMA_MODELS`, `~/.ollama/models`, `/usr/share/ollama/.ollama/models`.
+
+bench specifics: the ollama systemd service stores under `/usr/share/ollama` (mode 700,
+service user), so `verified` needed a read-only ACL — granted 2026-07-22 with
+`setfacl -R -m u:<you>:rX /usr/share/ollama` (+ default ACL for new blobs); reverse with
+`setfacl -R -b /usr/share/ollama` if ever unwanted. Model LOADS still go through
+`~/bin/vram-guard.sh` (VRAM headroom rules) — the provider only talks to a model an
+operator already chose to serve. First live series: qwen2.5:7b-instruct, chain
+**verified**, 100% both vintages on the demo set, series `10c246457f8d`.
+
+### 3g. `gaige plan` — what can this machine run
+
+```bash
+python -m gaige.cli plan
+```
+
+Prints the machine (CPUs/RAM/GPU free VRAM/served ollama models/llama-server presence) and
+a table of known configurations: fits-now verdict against measured floors, attestation
+level, and a measured runtime anchor NAMING its receipt. No quality column, deliberately —
+separation lives in receipts and does not transfer between configurations (the legend on
+every table says so; a test enforces it). Bench verdicts while the resident production scorer holds its
+VRAM: falcon-4bit fits, falcon-fp16 correctly "NO — needs 13.7 GB free, have ~11".
+
+### 3h. Not built yet
 
 M2r (probe-source drift index) awaits an external rescope sign-off; Mondrian conformal and
 batched scoring stay banked per the map. Do not assume they work because this file
@@ -270,7 +307,7 @@ mentions them.
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 109 passed
+python -m pytest tests/ -q          # 123 passed
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/
