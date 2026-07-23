@@ -171,10 +171,31 @@ longitudinal design. The series report shows accuracy per vintage per run, the m
 run-variance bound from the replicates (±0.0% on a deterministic pipeline — a result, not
 an assumption), and flags each later run's movement as within-variance or BEYOND the bound.
 
-### 3c. Not built yet
+### 3c. M3 — calibration drift (built 2026-07-22)
 
-P(True)/ECE (M3) and the change detectors (Page-Hinkley/CUSUM + conformal alarms, M5) —
-Phases C-D of `private-notes/queue/apparatus-burst-staging.md`. Do not assume they work because
+Add `--ptrue` to any probe run (needs a provider with option_logprobs — local-hf has it;
+llamacpp deliberately does not yet):
+
+```bash
+python -m gaige.cli probe run --probes probes.jsonl --provider local-hf --model <m> \
+    --cutoff 2024-06-01 --ptrue --register
+```
+
+Per answer, gaige asks the model whether its own answer is true and reads **P(True) from the
+logits** (Kadavath-style; a forward pass, no sampling; the template is hashed into the
+fingerprint and FROZEN per series once M3 has run). The receipt gains an M3 table: mean
+P(True), accuracy, the **confidence-accuracy gap** (positive = overconfident), and **ECE**
+with a bootstrap CI (bin count fixed per series). Toggling `--ptrue` on a later run does NOT
+fork the series (the M1 instrument is unchanged) — but resuming a half-finished run with it
+toggled refuses, and a changed template refuses at registration.
+
+First live measurement (gpt2 on the toy set): **accuracy 0%, mean P(True) ~79%, gap +79%** —
+"fluent and authoritative whilst quietly wrong," demonstrated by the smoke test itself.
+
+### 3d. Not built yet
+
+Change detectors (Page-Hinkley/CUSUM + conformal alarms, M5) and the real-model e2e —
+Phase D of `private-notes/queue/apparatus-burst-staging.md`. Do not assume they work because
 this file mentions them.
 
 ## 4. Checks you can run any time
