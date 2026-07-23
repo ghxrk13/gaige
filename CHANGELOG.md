@@ -68,6 +68,27 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, M5 — drift monitors; the last unbuilt battery instrument)
+
+- **`gaige/monitors.py`**: the detector-comparison arm. Per-interval **conformal alarms**
+  reuse `conformal_threshold` on zero-drift reference values (Day-0 replicates) and carry
+  the marginal finite-sample false-alarm bound, stated with the α×looks expected-false-alarm
+  arithmetic; **Page-Hinkley** and **CUSUM** run with tuning constants recorded and NO
+  guarantee claimed (cumulative statistics — the honesty scoping of the longitudinal spec §5;
+  conformal test martingales cited as the principled extension, unbuilt, unclaimed).
+  `monitors.evaluate` scores any monitor against a known onset: detection latency + false
+  alarms, M5's per-technique scorecard.
+- **`gaige series watch`** replays a registered series through the panel and writes
+  `monitors-report.md` beside the series. Direction-aware (accuracy alarms down, gap alarms
+  up). Practical note surfaced by the live run: α=0.2 conformal alarms need FOUR zero-drift
+  reference intervals — run Day-0 with `--replicates 4` to enable them from the start.
+- The `InsufficientCalibration` message noun is now context-parametric ("zero-drift
+  reference intervals" in monitor context vs "human calibration samples" in detector
+  calibration) — same refusal, right words.
+- Tests: 98 → 105 (injected shifts caught with latency ≤ 2, flat and sub-threshold series
+  stay quiet — specificity asserted, not assumed; refusal paths; exact scorecard
+  arithmetic; direction orientation).
+
 ### Added (2026-07-22, apparatus Phase D — the real-model e2e; the apparatus burst is COMPLETE)
 
 - `probes/demo.jsonl`: a committed, clean-room, 20-probe general-knowledge demo set in the

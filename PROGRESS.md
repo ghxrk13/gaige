@@ -34,6 +34,19 @@ literature's direction, now with intervals.
 (Mondrian) conformal — which is also what the paper's "multiscaled" headline is — and it
 needs ≥99 humans per bucket at α=0.01. Banked, not half-built.
 
+**Same day, seventh pass — M5: the battery is COMPLETE.** the operator pulled the change detectors
+forward, and they were the right shape to pull: monitors replay registered series, so the
+evening's real series became their first input. Per-interval conformal alarms carry the
+marginal false-alarm bound (the methodological contribution, scoped exactly as the spec's
+§5 wrote it); Page-Hinkley and CUSUM run as the literature runs them — tuned constants on
+the receipt, no guarantee claimed, martingales cited as future work. The live watch on the
+real series did precisely the honest thing: REFUSED conformal alarms on a 3-replicate
+reference ("a tighter guarantee than your data supports is not a guarantee" — and told the
+operator that Day-0 with `--replicates 4` fixes it), while PH/CUSUM sat correctly quiet on
+a within-variance interval. Specificity is asserted in tests, not assumed: sub-threshold
+shifts must NOT alarm. Tests 98 → 105. Every instrument in the M1/M1c/M3/M5 battery now
+exists; M2r waits on an external sign-off by design.
+
 **Same day, sixth pass — Phase D: the apparatus is REAL, end to end.** llama.cpp b10091 +
 Qwen2.5-1.5B GGUF (the staged non-gated stand-in for the gated Llama-3.2-1B), served on
 CPU, and every design decision met reality without flinching: `test-connection` earned
