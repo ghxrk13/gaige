@@ -22,18 +22,37 @@ from tests.test_probes import probe, write_probeset
 
 
 class FakeProvider:
-    """Deterministic canned answers; identity stable so resumes match."""
+    """Deterministic canned answers; identity stable so resumes match.
+
+    With `conf=(c_correct, c_wrong)` it also answers P(True) queries as a perfectly
+    controllable self-assessor: it parses the proposed answer out of the P(True) template
+    and returns logprobs that make ptrue_score come out exactly c_correct or c_wrong.
+    """
 
     name = "fake"
 
-    def __init__(self, answers: dict[str, str], is_local: bool = True, fail_after: int = -1):
-        self.answers = answers
+    def __init__(
+        self,
+        answers: dict[str, str],
+        is_local: bool = True,
+        fail_after: int = -1,
+        conf: tuple[float, float] | None = None,
+        truth: dict[str, str] | None = None,
+    ):
+        self.answers = answers  # what it SAYS (may include deliberate wrongs)
+        self.truth = truth  # what is TRUE (defaults to answers: a fake that is never wrong)
         self.is_local = is_local
         self.fail_after = fail_after
+        self.conf = conf
         self.calls = 0
 
     def capabilities(self):
-        return frozenset({CAP_COMPLETE})
+        caps = {CAP_COMPLETE}
+        if self.conf is not None:
+            from gaige.providers.base import CAP_OPTION_LOGPROBS
+
+            caps.add(CAP_OPTION_LOGPROBS)
+        return frozenset(caps)
 
     def complete(self, prompt, decoding):
         self.calls += 1
@@ -41,8 +60,15 @@ class FakeProvider:
             raise RuntimeError("simulated provider outage")
         return self.answers.get(prompt, "no idea")
 
-    def option_logprobs(self, prompt, options):  # pragma: no cover - never declared
-        raise NotImplementedError
+    def option_logprobs(self, prompt, options):
+        import math
+
+        if self.conf is None:  # pragma: no cover - never declared without conf
+            raise NotImplementedError
+        q = prompt.split("Question: ", 1)[1].split("\nProposed answer: ")[0]
+        proposed = prompt.split("\nProposed answer: ", 1)[1].split("\nIs the proposed", 1)[0]
+        c = self.conf[0] if proposed == (self.truth or self.answers).get(q) else self.conf[1]
+        return {"True": math.log(c), "False": math.log(1.0 - c)}
 
     def metadata(self):
         return {
@@ -183,3 +209,76 @@ def test_missing_capability_named():
 
     with pytest.raises(MissingCapability, match="complete"):
         require(NoComplete({}), CAP_COMPLETE)
+
+
+def test_ptrue_measures_m3_with_controlled_calibration(tmp_path):
+    """A fake self-assessor at 0.8-when-right / 0.9-when-wrong: every M3 number is
+    hand-computable. t0 (2 wrong of 4): mean conf .85, acc .5, gap +.35, ECE .55 —
+    the same arithmetic as the probcal hand case, arriving through the full runner."""
+    ps = make_set(tmp_path)
+    prov = FakeProvider(
+        right_answers(ps, wrong_ids=("p0", "p1")), conf=(0.8, 0.9), truth=right_answers(ps)
+    )
+    out = tmp_path / "run"
+    results = proberun.run_probes(
+        ps,
+        prov,
+        Decoding(),
+        cutoff="2024-06-01",
+        outdir=out,
+        n_boot=100,
+        with_ptrue=True,
+        progress=lambda *_: None,
+    )
+    m3_t0 = results["by_vintage"]["t0"]["m3"]
+    assert m3_t0["mean_confidence"] == pytest.approx(0.85)
+    assert m3_t0["gap"] == pytest.approx(0.35)
+    assert m3_t0["ece"] == pytest.approx(0.55)
+    m3_t1 = results["by_vintage"]["t1"]["m3"]
+    assert m3_t1["gap"] == pytest.approx(0.8 - 1.0)  # all right, conf .8: UNDERconfident
+    text = (out / "report.md").read_text(encoding="utf-8")
+    assert "M3 — calibration drift" in text and "ptrue-1" in text
+
+
+def test_toggling_ptrue_refuses_resume(tmp_path):
+    ps = make_set(tmp_path)
+    out = tmp_path / "run"
+    flaky = FakeProvider(right_answers(ps), fail_after=2, conf=(0.8, 0.9))
+    with pytest.raises(RuntimeError):
+        proberun.run_probes(
+            ps,
+            flaky,
+            Decoding(),
+            cutoff="2024-06-01",
+            outdir=out,
+            n_boot=100,
+            with_ptrue=True,
+            progress=lambda *_: None,
+        )
+    with pytest.raises(runstate.ResumeRefused, match="ptrue"):
+        proberun.run_probes(
+            ps,
+            FakeProvider(right_answers(ps)),
+            Decoding(),
+            cutoff="2024-06-01",
+            outdir=out,
+            n_boot=100,
+            resume=True,
+            with_ptrue=False,
+            progress=lambda *_: None,
+        )
+
+
+def test_ptrue_requires_option_logprobs(tmp_path):
+    ps = make_set(tmp_path)
+    with pytest.raises(MissingCapability, match="option_logprobs"):
+        proberun.run_probes(
+            ps,
+            FakeProvider(right_answers(ps)),
+            Decoding(),
+            cutoff="2024-06-01",
+            outdir=tmp_path / "run",
+            n_boot=100,
+            with_ptrue=True,
+            progress=lambda *_: None,
+        )
