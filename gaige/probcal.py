@@ -74,6 +74,21 @@ def ece_ci(
     return float(np.quantile(vals, lo)), float(np.quantile(vals, 1.0 - lo))
 
 
+def brier(confidences: np.ndarray, corrects: np.ndarray) -> dict:
+    """Brier score: mean squared error of P(True) against the 0/1 outcome.
+
+    Complements ECE: ECE bins and averages the calibration gap, so it moves
+    with the binning; the Brier score is the un-binned proper score
+    (calibration and refinement together). 0 is perfect; 0.25 is what
+    always answering 0.5 earns.
+    """
+    conf = np.asarray(confidences, dtype=np.float64)
+    corr = np.asarray(corrects, dtype=np.float64)
+    if len(conf) == 0:
+        return {"brier": float("nan"), "n": 0}
+    return {"brier": float(np.mean((conf - corr) ** 2)), "n": int(len(conf))}
+
+
 def confidence_accuracy_gap(confidences: np.ndarray, corrects: np.ndarray) -> float:
     """Mean stated confidence minus realized accuracy. Positive = overconfident.
 

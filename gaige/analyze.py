@@ -153,6 +153,7 @@ def compute_results(
 
     auroc = calibrate.auroc(scores, labels)
     auroc_ci = calibrate.bootstrap_ci(scores, labels, calibrate.auroc, n_boot=n_boot, seed=seed)
+    eer_point = calibrate.eer(scores, labels)
 
     thresholds = []
     ai_scores = scores[labels == "ai"]
@@ -226,6 +227,8 @@ def compute_results(
         "gaige_version": __version__,
         "auroc": auroc,
         "auroc_ci": auroc_ci,
+        "eer": eer_point["eer"],
+        "eer_threshold": eer_point["threshold"],
         "thresholds": thresholds,
         "conformal": conformal_rows,
         "subgroups": subgroups_block,

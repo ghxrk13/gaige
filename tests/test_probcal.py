@@ -64,3 +64,20 @@ def test_validation():
         probcal.ece(np.array([0.5]), np.array([]))
     with pytest.raises(ValueError, match=r"\[0, 1\]"):
         probcal.ece(np.array([1.5]), np.array([1.0]))
+
+
+def test_brier_perfect_predictions_score_zero():
+    r = probcal.brier(np.array([1.0, 0.0, 1.0]), np.array([1.0, 0.0, 1.0]))
+    assert r["brier"] == 0.0
+    assert r["n"] == 3
+
+
+def test_brier_constant_half_scores_quarter():
+    r = probcal.brier(np.array([0.5, 0.5, 0.5, 0.5]), np.array([1.0, 0.0, 1.0, 0.0]))
+    assert r["brier"] == pytest.approx(0.25)
+
+
+def test_brier_hand_computed_case():
+    # (0.8-1)^2 = 0.04 and (0.4-0)^2 = 0.16, mean 0.10.
+    r = probcal.brier(np.array([0.8, 0.4]), np.array([1.0, 0.0]))
+    assert r["brier"] == pytest.approx(0.10)
