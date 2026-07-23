@@ -67,6 +67,22 @@ n=100 is correct behavior, not an error. `report.md` also now carries per-subgro
 (rates below n=20 per class are withheld — counts speak instead) and a base-rate section
 (`--harm-volume` sets your institution's yearly volume; default is Vanderbilt's published 75,000).
 
+**Detector #2 — Binoculars** (built 2026-07-22; two 7B models, effectively GPU-only):
+
+```bash
+./.venv/bin/python -m gaige.cli run --corpus hc3-mini --n 100 --seed 17 \
+    --detector binoculars --quant 4bit --device cuda
+```
+
+Measured on the reference corpus: **AUROC 0.9992**, TPR 97% @1%FPR (thr −0.7829; gaige
+emits the NEGATED Binoculars ratio so higher = more AI-like), conformal α=.01 → 95% TPR.
+Fingerprint proves BOTH models (256 Linear4bit, ~8.1 GB — the VRAM ceiling beside the
+daemon). The paper's global thresholds are deliberately not used: measured on this corpus
+they run at **16%** (accuracy-mode) and **3%** (low-FPR-mode) FPR — the receipts gap,
+demonstrated. Quant A/B receipt (gpt2-large): fp32-cpu and fp16-cuda agree to 4 decimals on
+thr@1%; **4-bit moves it ~10% (2.05→2.26)** — quantization is an instrument parameter.
+Detail: `private-notes/research/burst2b-receipts-2026-07-22.md`.
+
 **No GPU?** It still works, with a smaller model:
 ```bash
 python -m gaige.cli run --corpus hc3-mini --n 50 --model gpt2 --quant fp32 --device cpu --max-tokens 512

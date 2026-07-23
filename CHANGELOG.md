@@ -68,6 +68,26 @@ first real release is staged in `pypi-stub/`.
   margin permanently. Subgroup tests inject a KNOWN length disparity and require the
   interval to bracket the injected truth, and the refusal floor to actually refuse.
 
+### Added (2026-07-22, Burst 2b — detector #2 and the quantization A/B; the public line)
+
+- **Binoculars** (`gaige/detectors/binoculars.py`), construction verified against the
+  released implementation before writing a line (ppl under the performer / x-ppl of
+  softmax(observer) against the performer's log-probs; gaige emits the NEGATED ratio to
+  keep higher-is-AI, documented in score_semantics). Tokenizer-identity refusal; BOTH
+  models quant-verified on the receipt; two-model VRAM floor. The paper's global
+  thresholds are deliberately unused. First receipt (falcon pair, 4bit/cuda, reference
+  corpus): **AUROC 0.9992, TPR 97% @1%FPR, conformal α=.01 → 95%** — and the paper's
+  global thresholds measured at **16%** (accuracy-mode) and **3%** (low-FPR-mode) FPR on
+  the same corpus: the receipts gap, demonstrated in-house.
+- **Quantization A/B receipts** (gpt2-large, one corpus, three instruments): fp32-cpu and
+  fp16-cuda agree on the 1%-FPR threshold to FOUR decimals (2.0461 vs 2.0462); **4-bit
+  moves it ~10% (→2.2580)** and costs a point of TPR. Quantization is an instrument
+  parameter, measured. The falcon-7b fp16 arm is deferred to a daemon-free window (fp16
+  needs ~13.7 GB; the production gate holds 4.8 of 16.4).
+- Tests: 105 → 109 (tokenizer-mismatch refusal via stubs, quant rules, protocol
+  conformance, and a real-math CPU smoke on the gpt2+distilgpt2 shared-tokenizer pair —
+  deterministic, negated, both models fingerprinted).
+
 ### Added (2026-07-22, M5 — drift monitors; the last unbuilt battery instrument)
 
 - **`gaige/monitors.py`**: the detector-comparison arm. Per-interval **conformal alarms**
