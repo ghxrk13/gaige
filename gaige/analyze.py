@@ -155,15 +155,12 @@ def compute_results(
     auroc_ci = calibrate.bootstrap_ci(scores, labels, calibrate.auroc, n_boot=n_boot, seed=seed)
 
     thresholds = []
+    ai_scores = scores[labels == "ai"]
     for tf in target_fprs:
         row = calibrate.threshold_at_fpr(scores, labels, tf)
         thr = row["threshold"]
-        row["tpr_ci"] = calibrate.bootstrap_ci(
-            scores,
-            labels,
-            lambda s, lb, thr=thr: float((s[lb == "ai"] >= thr).mean()),
-            n_boot=n_boot,
-            seed=seed,
+        row["tpr_ci"] = calibrate.proportion_ci(
+            (ai_scores >= thr).astype(np.float64), n_boot=n_boot, seed=seed
         )
         thresholds.append(row)
 

@@ -3,8 +3,8 @@
  "_why": "gaige is evolving toward longitudinal drift measurement. This pins the DETECTION workflow so it cannot rot silently while that happens. If these numbers move, the detection analysis path changed - which is either a bug or a deliberate change that must be argued for, never a surprise.",
  "auroc": 0.972,
  "auroc_ci": [
-  0.9457875,
-  0.993805
+  0.94478,
+  0.992905
  ],
  "n_boot": 1000,
  "thresholds": [

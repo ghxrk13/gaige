@@ -53,3 +53,55 @@ def test_bootstrap_ci_brackets_point():
     lo, hi = calibrate.bootstrap_ci(s, lab, calibrate.auroc, n_boot=200, seed=3)
     assert lo <= a <= hi
     assert hi - lo < 0.15
+
+
+def _auroc_reference_scalar(scores, labels):
+    """The pre-vectorization midrank implementation, kept as the equivalence oracle."""
+    human = scores[labels == "human"]
+    ai = scores[labels == "ai"]
+    both = np.concatenate([human, ai])
+    ranks = both.argsort().argsort().astype(np.float64) + 1.0
+    order = both.argsort()
+    sorted_vals = both[order]
+    i = 0
+    while i < len(sorted_vals):
+        j = i
+        while j + 1 < len(sorted_vals) and sorted_vals[j + 1] == sorted_vals[i]:
+            j += 1
+        if j > i:
+            ranks[order[i : j + 1]] = ranks[order[i : j + 1]].mean()
+        i = j + 1
+    r_ai = ranks[len(human) :].sum()
+    u = r_ai - len(ai) * (len(ai) + 1) / 2.0
+    return float(u / (len(human) * len(ai)))
+
+
+def test_vectorized_auroc_identical_to_scalar_reference():
+    """Midranks are exact math; the vectorization must be value-IDENTICAL, ties included."""
+    rng = np.random.default_rng(7)
+    cases = [
+        make(rng.normal(0, 1, 150), rng.normal(1, 1, 150)),  # continuous
+        make(
+            rng.integers(0, 5, 200).astype(float), rng.integers(2, 7, 200).astype(float)
+        ),  # heavy ties
+        make(np.zeros(60), np.zeros(60)),  # total tie: AUROC exactly 0.5
+    ]
+    for s, lab in cases:
+        assert calibrate.auroc(s, lab) == _auroc_reference_scalar(s, lab)
+
+
+def test_proportion_ci_deterministic_and_brackets():
+    rng = np.random.default_rng(4)
+    v = (rng.random(300) < 0.3).astype(float)
+    a = calibrate.proportion_ci(v, n_boot=500, seed=9)
+    b = calibrate.proportion_ci(v, n_boot=500, seed=9)
+    assert a == b  # seeded, reproducible to the bit
+    lo, hi = a
+    # The guaranteed property: the interval brackets the SAMPLE mean. (It misses the
+    # population truth ~5% of the time by construction — asserting truth on one seeded
+    # draw would be the kind of overclaim this codebase exists to refuse.)
+    assert lo <= v.mean() <= hi
+    se = float(np.sqrt(v.mean() * (1 - v.mean()) / len(v)))
+    assert 2 * se < (hi - lo) < 6 * se  # width is binomial-plausible, not degenerate
+    with pytest.raises(ValueError, match="at least one value"):
+        calibrate.proportion_ci(np.array([]))
