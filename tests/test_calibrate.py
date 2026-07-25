@@ -130,3 +130,41 @@ def test_eer_interpolates_between_sweep_points():
     r = calibrate.eer(s, y)
     assert r["eer"] == pytest.approx(0.25)
     assert r["threshold"] == pytest.approx(6.25)
+
+
+def test_eer_matches_definition_oracle_on_random_corpora():
+    """Differential property: eer() against an independent, definition-based oracle —
+    grid-search the linearly interpolated FPR and FNR curves for their closest approach.
+    The oracle shares no code path with the vectorized crossing logic, so an argmax or
+    interpolation-weight transcription bug fails here even if the exact hand cases pass.
+    Half the draws come from tiny value grids to force heavy score ties (where ROC sweeps
+    actually break)."""
+    rng = np.random.default_rng(7)
+    for trial in range(30):
+        # Respect the library's own honesty floor (CorpusTooSmall below 50/class).
+        n_h = int(rng.integers(50, 120))
+        n_a = int(rng.integers(50, 120))
+        if trial % 2 == 0:
+            grid = np.array([0.0, 0.5, 1.0, 1.5, 2.0])
+            s_h = rng.choice(grid, size=n_h)
+            s_a = rng.choice(grid, size=n_a) + rng.choice([0.0, 0.5], size=n_a)
+        else:
+            s_h = rng.normal(0.0, 1.0, size=n_h)
+            s_a = rng.normal(1.0, 1.2, size=n_a)
+        s, y = make(s_h, s_a)
+        r = calibrate.eer(s, y)
+        assert 0.0 <= r["eer"] <= 1.0
+        pts = calibrate.roc_points(s, y)
+        thr = np.asarray(pts["thresholds"], dtype=np.float64)
+        fpr = np.asarray(pts["fpr"], dtype=np.float64)
+        fnr = 1.0 - np.asarray(pts["tpr"], dtype=np.float64)
+        # np.interp needs ascending x; the sweep is descending, so flip everything.
+        t_asc = thr[::-1]
+        dense = np.linspace(t_asc[0], t_asc[-1], 200_001)
+        f_dense = np.interp(dense, t_asc, fpr[::-1])
+        m_dense = np.interp(dense, t_asc, fnr[::-1])
+        k = int(np.argmin(np.abs(f_dense - m_dense)))
+        oracle_eer = (f_dense[k] + m_dense[k]) / 2.0
+        assert r["eer"] == pytest.approx(oracle_eer, abs=1e-3), (
+            f"trial {trial}: eer {r['eer']} vs oracle {oracle_eer}"
+        )
