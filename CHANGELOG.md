@@ -13,6 +13,13 @@ first real release is staged in `pypi-stub/`.
 
 ### Added
 
+- **RAID corpus adapter** (`gaige corpus prepare-raid`): seeded slices of the RAID benchmark
+  (Dugan et al., ACL 2024) with generator/domain/attack/decoding carried as subgroup axes on
+  every row. Two sources: datasets-server paging (no 11.8 GB download; dataset revision sha
+  recorded) or a locally downloaded RAID csv (streamed, stdlib `csv`, per-cell reservoir
+  sampling). No new dependencies; no third-party text enters the repo — slices land in the
+  gitignored `corpora/`, and the adapter's tests fabricate synthetic rows in RAID's verified
+  column shape. Batched scoring stays banked per the map until RAID-scale runs demand it.
 - `gaige analyze` — re-derive AUROC, thresholds, CIs and a full report from scores that already
   exist. No model, no GPU. `run` and `analyze` share one `compute_results`, so a replay cannot
   disagree with the original run.

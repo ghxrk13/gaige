@@ -13,6 +13,7 @@ gaige probe run --probes probes.jsonl --provider local-hf --model gpt2-large --c
 gaige providers
 gaige test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
 gaige corpora
+gaige corpus prepare-raid --generators gpt4,mistral-chat --domains abstracts,reddit
 """
 
 from __future__ import annotations
@@ -246,7 +247,27 @@ def cmd_analyze(args) -> int:
 
 def cmd_corpora(_args) -> int:
     print("hc3-mini    seeded subsample of HC3 (Hello-SimpleAI), human vs ChatGPT answers")
+    print("raid        seeded slices of RAID (Dugan et al., ACL 2024) via `gaige corpus prepare-raid`")
     print("<path>      any JSONL with rows {id?, text, label: human|ai}")
+    return 0
+
+
+def cmd_corpus_prepare_raid(args) -> int:
+    from .corpus_raid import prepare_raid_slice
+
+    gens = [s.strip() for s in args.generators.split(",") if s.strip()]
+    doms = [s.strip() for s in args.domains.split(",") if s.strip()]
+    atks = [s.strip() for s in args.attacks.split(",") if s.strip()]
+    c = prepare_raid_slice(
+        Path(args.root) / "corpora",
+        generators=gens, domains=doms, attacks=atks,
+        per_cell=args.per_cell, seed=args.seed,
+        min_words=args.min_words, max_words=args.max_words,
+        source=args.source, raid_csv=Path(args.csv) if args.csv else None,
+    )
+    print(f"[corpus] {c.name} counts={c.counts} sha256={c.sha256[:16]}")
+    print(f"[corpus] revision={c.meta.get('dataset_revision')} → {c.path}")
+    print(f"next: gaige run --corpus {c.path} --detector fast-detect-gpt")
     return 0
 
 
@@ -599,6 +620,36 @@ def main(argv=None) -> int:
 
     c = sub.add_parser("corpora", help="list built-in corpora")
     c.set_defaults(fn=cmd_corpora)
+
+    co = sub.add_parser("corpus", help="corpus tools: prepare slices from public benchmarks")
+    co_sub = co.add_subparsers(dest="corpus_cmd", required=True)
+    cor = co_sub.add_parser(
+        "prepare-raid",
+        help="prepare a seeded RAID slice (Dugan et al., ACL 2024) into corpora/ — "
+        "fetched at run time, never redistributed",
+    )
+    cor.add_argument(
+        "--generators", default="gpt4,mistral-chat",
+        help="comma list of RAID generator names (the model column); "
+        "'human' is always sampled per domain regardless",
+    )
+    cor.add_argument("--domains", default="abstracts,reddit", help="comma list of RAID domains")
+    cor.add_argument(
+        "--attacks", default="none",
+        help="comma list of RAID attack names applied to the AI cells (humans are attack=none)",
+    )
+    cor.add_argument("--per-cell", type=int, default=60, help="rows per sampling cell")
+    cor.add_argument("--seed", type=int, default=17)
+    cor.add_argument("--min-words", type=int, default=50)
+    cor.add_argument("--max-words", type=int, default=500)
+    cor.add_argument(
+        "--source", choices=["hub", "csv"], default="hub",
+        help="hub = page filtered rows from datasets-server (no big download); "
+        "csv = stream a locally downloaded RAID csv",
+    )
+    cor.add_argument("--csv", help="path to the downloaded RAID csv (with --source csv)")
+    cor.add_argument("--root", default=".", help="gaige root (slice lands in <root>/corpora/)")
+    cor.set_defaults(fn=cmd_corpus_prepare_raid)
 
     pr = sub.add_parser("probe", help="probe runner: dated probes -> answers -> graded receipt")
     pr_sub = pr.add_subparsers(dest="probe_cmd", required=True)

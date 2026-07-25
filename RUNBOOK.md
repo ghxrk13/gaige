@@ -46,6 +46,20 @@ so it cannot rot while other capabilities get built.
     --detector fast-detect-gpt --model tiiuae/falcon-7b --quant 4bit --device cuda
 ```
 
+RAID slices (harder, attack/domain-stratified — added 2026-07-25): prepare first, then run
+the produced path. Slices are fetched at preparation time (datasets-server pages; or
+`--source csv` against a downloaded RAID csv) and never enter git.
+
+```bash
+./.venv/bin/python -m gaige.cli corpus prepare-raid \
+    --generators gpt4,mistral-chat --domains abstracts,reddit --attacks none \
+    --per-cell 60 --seed 17
+./.venv/bin/python -m gaige.cli run --corpus corpora/raid-g2d2a1-n60-s17.jsonl \
+    --detector fast-detect-gpt --model tiiuae/falcon-7b --quant 4bit --device cuda
+```
+The report's subgroup section then stratifies by generator/domain/attack/decoding
+automatically (universal meta keys). Slice thresholds describe that slice, nothing more.
+
 **Correct output ends with (measured 2026-07-22 on the pinned env):**
 ```
 [receipt] reports/<timestamp>-fast-detect-gpt/report.md
