@@ -39,3 +39,9 @@ than relying on license silence.)
 `hc3-mini` subsamples HC3 (Hello-SimpleAI), distributed on the Hugging Face Hub under its own
 terms. gaige downloads it at run time and redistributes none of it. Every report records the
 corpus sha256 so a reader can verify which subsample produced a number.
+
+`gaige corpus prepare-raid` slices RAID (Dugan et al., *RAID: A Shared Benchmark for Robust
+Evaluation of Machine-Generated Text Detectors*, ACL 2024, arXiv:2405.07940), distributed by
+its authors on the Hugging Face Hub under their terms. gaige fetches rows at preparation time
+and redistributes none of it; every slice records the dataset revision sha, the full selection
+parameters, and the slice sha256 so a reader can verify exactly which cut produced a number.
