@@ -81,3 +81,10 @@ def test_brier_hand_computed_case():
     # (0.8-1)^2 = 0.04 and (0.4-0)^2 = 0.16, mean 0.10.
     r = probcal.brier(np.array([0.8, 0.4]), np.array([1.0, 0.0]))
     assert r["brier"] == pytest.approx(0.10)
+
+
+def test_brier_empty_is_honest_nan():
+    # An empty vintage must refuse a number, not invent one: NaN with n=0.
+    r = probcal.brier(np.array([]), np.array([]))
+    assert r["n"] == 0
+    assert np.isnan(r["brier"])
