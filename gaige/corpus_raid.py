@@ -47,8 +47,17 @@ REPO_API = f"https://huggingface.co/api/datasets/{DATASET}"
 # Verified live against the dataset on 2026-07-25 (revision 865cac74). If RAID ever
 # reshapes, _validate_columns names the drift instead of mis-mapping silently.
 EXPECTED_COLUMNS = (
-    "id", "adv_source_id", "source_id", "model", "decoding",
-    "repetition_penalty", "attack", "domain", "title", "prompt", "generation",
+    "id",
+    "adv_source_id",
+    "source_id",
+    "model",
+    "decoding",
+    "repetition_penalty",
+    "attack",
+    "domain",
+    "title",
+    "prompt",
+    "generation",
 )
 CITATION = "Dugan et al., RAID, ACL 2024 (arXiv:2405.07940)"
 LICENSE_NOTE = (
@@ -56,7 +65,7 @@ LICENSE_NOTE = (
     "gaige fetches rows at preparation time and redistributes none of it."
 )
 
-PAGE = 100          # datasets-server maximum rows per request
+PAGE = 100  # datasets-server maximum rows per request
 MAX_FETCH_TRIES = 4
 
 
@@ -71,6 +80,7 @@ class RaidFetchError(RuntimeError):
 @dataclass
 class Cell:
     """One sampling cell: a (generator, domain, attack) combination."""
+
     model: str
     domain: str
     attack: str
@@ -80,8 +90,9 @@ class Cell:
 
 
 def _validate_columns(names: list[str] | tuple[str, ...]) -> None:
-    missing = [c for c in ("id", "model", "attack", "domain", "generation", "decoding")
-               if c not in names]
+    missing = [
+        c for c in ("id", "model", "attack", "domain", "generation", "decoding") if c not in names
+    ]
     if missing:
         raise RaidSchemaChanged(
             f"RAID columns missing {missing} (got {sorted(names)}). The upstream schema "
@@ -116,6 +127,7 @@ def _word_ok(text: str, min_words: int, max_words: int) -> bool:
 
 # --------------------------------------------------------------------------- hub path
 
+
 def _fetch_json(url: str, timeout: float = 30.0) -> dict:
     last = None
     for attempt in range(MAX_FETCH_TRIES):
@@ -136,24 +148,33 @@ def _fetch_json(url: str, timeout: float = 30.0) -> dict:
 def _where(cell: Cell) -> str:
     # datasets-server /filter SQL-ish where clause; values are controlled vocabulary
     # (RAID's own category strings), quoted simply.
-    return (f"\"model\"='{cell.model}' AND \"domain\"='{cell.domain}' "
-            f"AND \"attack\"='{cell.attack}'")
+    return f"\"model\"='{cell.model}' AND \"domain\"='{cell.domain}' AND \"attack\"='{cell.attack}'"
 
 
 def _filter_url(cell: Cell, offset: int, length: int) -> str:
     from urllib.parse import quote
-    return (f"{API_BASE}/filter?dataset={quote(DATASET, safe='')}&config=raid"
-            f"&split=train&where={quote(_where(cell), safe='')}"
-            f"&offset={offset}&length={length}")
+
+    return (
+        f"{API_BASE}/filter?dataset={quote(DATASET, safe='')}&config=raid"
+        f"&split=train&where={quote(_where(cell), safe='')}"
+        f"&offset={offset}&length={length}"
+    )
 
 
 def _revision_sha(fetch=_fetch_json) -> str:
     return str(fetch(REPO_API).get("sha") or "unknown")
 
 
-def sample_cell_hub(cell: Cell, need: int, rng: random.Random, *,
-                    min_words: int, max_words: int, fetch=_fetch_json,
-                    progress=lambda s: None) -> list[dict]:
+def sample_cell_hub(
+    cell: Cell,
+    need: int,
+    rng: random.Random,
+    *,
+    min_words: int,
+    max_words: int,
+    fetch=_fetch_json,
+    progress=lambda s: None,
+) -> list[dict]:
     """Fetch one cell via datasets-server /filter: sequential shallow pages into a pool,
     then a SEEDED subsample within that pool.
 
@@ -191,8 +212,16 @@ def sample_cell_hub(cell: Cell, need: int, rng: random.Random, *,
 
 # --------------------------------------------------------------------------- csv path
 
-def sample_csv(raid_csv: Path, cells: list[Cell], need: int, rng: random.Random, *,
-               min_words: int, max_words: int) -> dict[str, list[dict]]:
+
+def sample_csv(
+    raid_csv: Path,
+    cells: list[Cell],
+    need: int,
+    rng: random.Random,
+    *,
+    min_words: int,
+    max_words: int,
+) -> dict[str, list[dict]]:
     """Single streaming pass, per-cell reservoir sampling. Stdlib csv only."""
     # RAID generations exceed the csv module's default 128 KiB field limit.
     csv.field_size_limit(sys.maxsize)
@@ -222,11 +251,22 @@ def sample_csv(raid_csv: Path, cells: list[Cell], need: int, rng: random.Random,
 
 # --------------------------------------------------------------------------- prepare
 
-def prepare_raid_slice(out_dir: Path, *, generators: list[str], domains: list[str],
-                       attacks: list[str], per_cell: int = 60, seed: int = 17,
-                       min_words: int = 50, max_words: int = 500,
-                       source: str = "hub", raid_csv: Path | None = None,
-                       fetch=_fetch_json, progress=print) -> corpus.Corpus:
+
+def prepare_raid_slice(
+    out_dir: Path,
+    *,
+    generators: list[str],
+    domains: list[str],
+    attacks: list[str],
+    per_cell: int = 60,
+    seed: int = 17,
+    min_words: int = 50,
+    max_words: int = 500,
+    source: str = "hub",
+    raid_csv: Path | None = None,
+    fetch=_fetch_json,
+    progress=print,
+) -> corpus.Corpus:
     """Prepare a seeded RAID slice and return it as a gaige Corpus.
 
     Human rows are sampled per domain (model="human", attack="none" — RAID applies
@@ -243,22 +283,34 @@ def prepare_raid_slice(out_dir: Path, *, generators: list[str], domains: list[st
     rng = random.Random(seed)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ai_cells = [Cell(g, d, a) for g in generators for d in domains for a in attacks
-                if g != "human"]
+    ai_cells = [Cell(g, d, a) for g in generators for d in domains for a in attacks if g != "human"]
     human_cells = [Cell("human", d, "none") for d in domains]
     revision = "local-csv" if source == "csv" else _revision_sha(fetch)
 
     rows: list[dict] = []
     if source == "csv":
-        pools = sample_csv(Path(raid_csv), human_cells + ai_cells, per_cell, rng,
-                           min_words=min_words, max_words=max_words)
+        pools = sample_csv(
+            Path(raid_csv),
+            human_cells + ai_cells,
+            per_cell,
+            rng,
+            min_words=min_words,
+            max_words=max_words,
+        )
         for key, got in pools.items():
             progress(f"  {key}: {len(got)}/{per_cell}")
             rows.extend(got)
     else:
         for cell in human_cells + ai_cells:
-            got = sample_cell_hub(cell, per_cell, rng, min_words=min_words,
-                                  max_words=max_words, fetch=fetch, progress=progress)
+            got = sample_cell_hub(
+                cell,
+                per_cell,
+                rng,
+                min_words=min_words,
+                max_words=max_words,
+                fetch=fetch,
+                progress=progress,
+            )
             progress(f"  {cell.key()}: {len(got)}/{per_cell}")
             rows.extend(got)
 
@@ -273,20 +325,31 @@ def prepare_raid_slice(out_dir: Path, *, generators: list[str], domains: list[st
             fh.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     c = corpus.load_jsonl(out_path)
-    c.meta.update({
-        "dataset": DATASET,
-        "dataset_revision": revision,
-        "source": ("datasets-server pages" if source == "hub"
-                   else f"local csv {raid_csv}"),
-        "selection": {"generators": generators, "domains": domains,
-                      "attacks": attacks, "per_cell": per_cell, "seed": seed,
-                      "sampling": ("sequential-window + seeded subsample" if source == "hub"
-                                   else "seeded per-cell reservoir over full csv")},
-        "filters": {"min_words": min_words, "max_words": max_words},
-        "retrieved_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "citation": CITATION,
-        "license": LICENSE_NOTE,
-        "note": (f"RAID slice ({sel}, seed {seed}): thresholds measured here describe "
-                 "THIS slice's generators/domains/attacks, not RAID, and not deployment."),
-    })
+    c.meta.update(
+        {
+            "dataset": DATASET,
+            "dataset_revision": revision,
+            "source": ("datasets-server pages" if source == "hub" else f"local csv {raid_csv}"),
+            "selection": {
+                "generators": generators,
+                "domains": domains,
+                "attacks": attacks,
+                "per_cell": per_cell,
+                "seed": seed,
+                "sampling": (
+                    "sequential-window + seeded subsample"
+                    if source == "hub"
+                    else "seeded per-cell reservoir over full csv"
+                ),
+            },
+            "filters": {"min_words": min_words, "max_words": max_words},
+            "retrieved_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "citation": CITATION,
+            "license": LICENSE_NOTE,
+            "note": (
+                f"RAID slice ({sel}, seed {seed}): thresholds measured here describe "
+                "THIS slice's generators/domains/attacks, not RAID, and not deployment."
+            ),
+        }
+    )
     return c
