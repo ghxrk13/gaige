@@ -16,8 +16,8 @@ import pytest
 
 from gaige import corpus_raid
 from gaige.corpus_raid import (
-    Cell,
     EXPECTED_COLUMNS,
+    Cell,
     RaidFetchError,
     RaidSchemaChanged,
     _map_row,
@@ -28,17 +28,20 @@ from gaige.corpus_raid import (
 from gaige.subgroups import auto_keys
 
 
-def synth_raid_row(i: int, model: str, domain: str, attack: str = "none",
-                   n_words: int = 80) -> dict:
+def synth_raid_row(
+    i: int, model: str, domain: str, attack: str = "none", n_words: int = 80
+) -> dict:
     return {
         "id": f"row-{model}-{domain}-{attack}-{i}",
-        "adv_source_id": "x", "source_id": "x",
+        "adv_source_id": "x",
+        "source_id": "x",
         "model": model,
         "decoding": "" if model == "human" else "sampling",
         "repetition_penalty": "",
         "attack": attack,
         "domain": domain,
-        "title": "t", "prompt": "",
+        "title": "t",
+        "prompt": "",
         "generation": " ".join(f"synthetic{j}" for j in range(n_words)),
     }
 
@@ -95,29 +98,45 @@ def test_prepare_from_csv_end_to_end(tmp_path):
     p = tmp_path / "raid.csv"
     write_raid_csv(p, rows)
     c = prepare_raid_slice(
-        tmp_path / "corpora", generators=["gpt4"], domains=["abstracts", "reddit"],
-        attacks=["none"], per_cell=60, seed=17, source="csv", raid_csv=p,
+        tmp_path / "corpora",
+        generators=["gpt4"],
+        domains=["abstracts", "reddit"],
+        attacks=["none"],
+        per_cell=60,
+        seed=17,
+        source="csv",
+        raid_csv=p,
         progress=lambda s: None,
     )
     assert c.counts == {"human": 120, "ai": 120}
     assert c.path.name.startswith("raid-g1d2a1-n60-s17")
     # provenance lands in Corpus.meta → env.json verbatim
-    for key in ("dataset", "dataset_revision", "selection", "filters",
-                "retrieved_utc", "citation", "license", "note"):
+    for key in (
+        "dataset",
+        "dataset_revision",
+        "selection",
+        "filters",
+        "retrieved_utc",
+        "citation",
+        "license",
+        "note",
+    ):
         assert key in c.meta, key
     assert c.meta["dataset_revision"] == "local-csv"
     # universal meta keys → subgroup axes discovered
-    items = [{"label": r["label"], "score": 0.0, "n_words": 80, "meta": r["meta"]}
-             for r in c.items]
-    assert set(auto_keys(items)) >= {"length_bucket", "generator", "domain",
-                                     "attack", "decoding"}
+    items = [{"label": r["label"], "score": 0.0, "n_words": 80, "meta": r["meta"]} for r in c.items]
+    assert set(auto_keys(items)) >= {"length_bucket", "generator", "domain", "attack", "decoding"}
 
 
 def test_prepare_csv_without_path_refuses():
     with pytest.raises(RaidFetchError, match="11.8 GB"):
         prepare_raid_slice(
-            __import__("pathlib").Path("/nonexistent-out"), generators=["gpt4"],
-            domains=["abstracts"], attacks=["none"], source="csv", raid_csv=None,
+            __import__("pathlib").Path("/nonexistent-out"),
+            generators=["gpt4"],
+            domains=["abstracts"],
+            attacks=["none"],
+            source="csv",
+            raid_csv=None,
         )
 
 
@@ -132,21 +151,29 @@ def test_hub_path_with_injected_fetcher(tmp_path):
             return {"sha": "fakesha123"}
         # crude parse of the where clause + offset out of the filter url
         from urllib.parse import parse_qs, unquote, urlparse
+
         q = parse_qs(urlparse(url).query)
         where = unquote(q["where"][0])
-        model = where.split("\"model\"='")[1].split("'")[0]
-        domain = where.split("\"domain\"='")[1].split("'")[0]
-        offset = int(q["offset"][0]); length = int(q["length"][0])
+        model = where.split('"model"=\'')[1].split("'")[0]
+        domain = where.split('"domain"=\'')[1].split("'")[0]
+        offset = int(q["offset"][0])
+        length = int(q["length"][0])
         rows = pool[(model, domain)]
         return {
             "features": [{"name": n} for n in EXPECTED_COLUMNS],
             "num_rows_total": len(rows),
-            "rows": [{"row": r} for r in rows[offset:offset + length]],
+            "rows": [{"row": r} for r in rows[offset : offset + length]],
         }
 
     c = prepare_raid_slice(
-        tmp_path / "corpora", generators=["gpt4"], domains=["abstracts"],
-        attacks=["none"], per_cell=60, seed=17, source="hub", fetch=fake_fetch,
+        tmp_path / "corpora",
+        generators=["gpt4"],
+        domains=["abstracts"],
+        attacks=["none"],
+        per_cell=60,
+        seed=17,
+        source="hub",
+        fetch=fake_fetch,
         progress=lambda s: None,
     )
     assert c.counts == {"human": 60, "ai": 60}
@@ -161,8 +188,9 @@ def test_word_filter_enforced(tmp_path):
     rows += [synth_raid_row(100 + i, "human", "abstracts", n_words=80) for i in range(60)]
     p = tmp_path / "raid.csv"
     write_raid_csv(p, rows)
-    pools = sample_csv(p, [Cell("human", "abstracts", "none")], 60, random.Random(1),
-                       min_words=50, max_words=500)
+    pools = sample_csv(
+        p, [Cell("human", "abstracts", "none")], 60, random.Random(1), min_words=50, max_words=500
+    )
     got = pools["human|abstracts|none"]
     assert len(got) == 60
     assert all(len(r["text"].split()) >= 50 for r in got)
