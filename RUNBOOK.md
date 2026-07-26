@@ -312,7 +312,31 @@ separation lives in receipts and does not transfer between configurations (the l
 every table says so; a test enforces it). Bench verdicts while the resident production scorer holds its
 VRAM: falcon-4bit fits, falcon-fp16 correctly "NO — needs 13.7 GB free, have ~11".
 
-### 3h. Not built yet
+### 3h. Author a probe set (built 2026-07-26)
+
+```bash
+python -m gaige.cli probe new --out probes/t0.jsonl --vintage t0 --cutoff 2024-06-01
+# ... author the probes and fill in the manifest's control linkage, then:
+python -m gaige.cli probe lint --probes probes/t0.jsonl
+```
+
+`probe new` scaffolds the JSONL plus a sidecar manifest (`t0.manifest.json`) with the
+signed authoring decisions pre-filled: nem grading declaration, greedy temperature-0
+decoding block, and a control-linkage stanza (name + sha256 + logprob-argmax scoring) you
+must point at the frozen MMLU-subset control. The manifest is a sidecar deliberately —
+editing a declaration never moves the probe-file sha256 or the frozen vintage hashes.
+
+`probe lint` is the mechanical gate: errors for anything violating a signed decision
+(missing `authored`, a `source_date` not post-dating the cutoff, `authored` predating its
+source, unfilled EDIT-ME placeholders, ungradeable answers, a broken or unhashed control
+linkage), warnings for authoring advice (answers over 5 words, redundant aliases,
+duplicate prompts). A study set must lint clean — **`probe run` enforces it**: when a
+manifest sits beside the probe file, a set that fails lint refuses to run, and a run
+whose temperature contradicts the declared greedy block refuses with the remedy (change
+the declaration first, so the fork is visible in history). A manifest-less file (like
+`probes/demo.jsonl`) runs as before and says the declarations are unenforced.
+
+### 3i. Not built yet
 
 M2r (probe-source drift index) awaits an external rescope sign-off; Mondrian conformal and
 batched scoring stay banked per the map. Do not assume they work because this file
@@ -321,7 +345,7 @@ mentions them.
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 123 passed
+python -m pytest tests/ -q          # 165 passed
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/

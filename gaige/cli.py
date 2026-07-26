@@ -247,7 +247,9 @@ def cmd_analyze(args) -> int:
 
 def cmd_corpora(_args) -> int:
     print("hc3-mini    seeded subsample of HC3 (Hello-SimpleAI), human vs ChatGPT answers")
-    print("raid        seeded slices of RAID (Dugan et al., ACL 2024) via `gaige corpus prepare-raid`")
+    print(
+        "raid        seeded slices of RAID (Dugan et al., ACL 2024) via `gaige corpus prepare-raid`"
+    )
     print("<path>      any JSONL with rows {id?, text, label: human|ai}")
     return 0
 
@@ -260,10 +262,15 @@ def cmd_corpus_prepare_raid(args) -> int:
     atks = [s.strip() for s in args.attacks.split(",") if s.strip()]
     c = prepare_raid_slice(
         Path(args.root) / "corpora",
-        generators=gens, domains=doms, attacks=atks,
-        per_cell=args.per_cell, seed=args.seed,
-        min_words=args.min_words, max_words=args.max_words,
-        source=args.source, raid_csv=Path(args.csv) if args.csv else None,
+        generators=gens,
+        domains=doms,
+        attacks=atks,
+        per_cell=args.per_cell,
+        seed=args.seed,
+        min_words=args.min_words,
+        max_words=args.max_words,
+        source=args.source,
+        raid_csv=Path(args.csv) if args.csv else None,
     )
     print(f"[corpus] {c.name} counts={c.counts} sha256={c.sha256[:16]}")
     print(f"[corpus] revision={c.meta.get('dataset_revision')} → {c.path}")
@@ -310,6 +317,7 @@ def _build_provider(args):
 def cmd_probe_run(args) -> int:
     from datetime import datetime as _dt
 
+    from . import probeauthor
     from .proberun import run_probes
     from .probes import load_probes
     from .providers.base import Decoding, require_local_or_optin
@@ -325,6 +333,10 @@ def cmd_probe_run(args) -> int:
         seed=args.gen_seed,
         max_new_tokens=args.max_new_tokens,
     )
+    try:
+        print(f"[manifest] {probeauthor.check_run_against_manifest(Path(args.probes), decoding)}")
+    except probeauthor.ManifestViolation as e:
+        raise SystemExit(str(e)) from None
     print(f"[provider] loading {args.provider}...")
     meta = provider.metadata()  # triggers load/connect; resolves device + attestation
     print(f"[provider] ready · attestation: {meta.get('attestation', '?')}")
@@ -394,6 +406,43 @@ def cmd_probe_run(args) -> int:
                 f"{Path(reg_dir) / series['series_id'] / 'series-report.md'}"
             )
     return 0
+
+
+def cmd_probe_new(args) -> int:
+    from .probeauthor import new_probe_set
+
+    try:
+        out, mpath = new_probe_set(Path(args.out), vintage=args.vintage, cutoff=args.cutoff)
+    except (FileExistsError, ValueError) as e:
+        raise SystemExit(str(e)) from None
+    print(f"[new] probe template: {out}")
+    print(f"[new] manifest:       {mpath}")
+    print(
+        f"[next] author probes (short checkable answers; every source_date after "
+        f"{args.cutoff}), link the frozen control subset in the manifest, then: "
+        f"gaige probe lint --probes {out}"
+    )
+    return 0
+
+
+def cmd_probe_lint(args) -> int:
+    from .probeauthor import lint
+
+    rep = lint(Path(args.probes))
+    for w in rep.warnings:
+        print(f"[warn] {w}")
+    for e in rep.errors:
+        print(f"[FAIL] {e}")
+    for v, d in sorted(rep.vintages.items()):
+        pc = f" · post-cutoff {d['post_cutoff']}/{d['n']}" if "post_cutoff" in d else ""
+        print(f"[lint] vintage {v}: n={d['n']}{pc}")
+    if rep.ok:
+        print(
+            f"[lint] PASS — meets the signed authoring decisions ({len(rep.warnings)} warning(s))"
+        )
+        return 0
+    print(f"[lint] FAIL — {len(rep.errors)} error(s); a study set must lint clean")
+    return 1
 
 
 def cmd_series(args) -> int:
@@ -629,13 +678,15 @@ def main(argv=None) -> int:
         "fetched at run time, never redistributed",
     )
     cor.add_argument(
-        "--generators", default="gpt4,mistral-chat",
+        "--generators",
+        default="gpt4,mistral-chat",
         help="comma list of RAID generator names (the model column); "
         "'human' is always sampled per domain regardless",
     )
     cor.add_argument("--domains", default="abstracts,reddit", help="comma list of RAID domains")
     cor.add_argument(
-        "--attacks", default="none",
+        "--attacks",
+        default="none",
         help="comma list of RAID attack names applied to the AI cells (humans are attack=none)",
     )
     cor.add_argument("--per-cell", type=int, default=60, help="rows per sampling cell")
@@ -643,7 +694,9 @@ def main(argv=None) -> int:
     cor.add_argument("--min-words", type=int, default=50)
     cor.add_argument("--max-words", type=int, default=500)
     cor.add_argument(
-        "--source", choices=["hub", "csv"], default="hub",
+        "--source",
+        choices=["hub", "csv"],
+        default="hub",
         help="hub = page filtered rows from datasets-server (no big download); "
         "csv = stream a locally downloaded RAID csv",
     )
@@ -717,6 +770,31 @@ def main(argv=None) -> int:
         "replicate-tagged runs when k>1",
     )
     prr.set_defaults(fn=cmd_probe_run)
+
+    prn = pr_sub.add_parser(
+        "new",
+        help="scaffold a probe-set template + manifest (the signed authoring decisions "
+        "pre-filled; placeholders fail lint until authored)",
+    )
+    prn.add_argument("--out", required=True, help="path for the new probe-set JSONL")
+    prn.add_argument("--vintage", default="t0", help="vintage label for the template rows")
+    prn.add_argument(
+        "--cutoff",
+        required=True,
+        help="model training cutoff (YYYY-MM-DD) the set is authored against; every "
+        "source_date must post-date it",
+    )
+    prn.set_defaults(fn=cmd_probe_new)
+
+    prl = pr_sub.add_parser(
+        "lint",
+        help="lint a probe set + manifest against the signed probe-authoring decisions "
+        "(provenance fields, nem grading declaration, greedy decoding, control linkage)",
+    )
+    prl.add_argument(
+        "--probes", required=True, help="probe-set JSONL (manifest read from beside it)"
+    )
+    prl.set_defaults(fn=cmd_probe_lint)
 
     se = sub.add_parser("series", help="the run registry: list series, show a series report")
     se_sub = se.add_subparsers(dest="series_cmd", required=True)

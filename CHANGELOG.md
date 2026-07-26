@@ -13,6 +13,17 @@ first real release is staged in `pypi-stub/`.
 
 ### Added
 
+- **Probe-authoring toolchain** (`gaige probe new` + `gaige probe lint`): scaffolds a
+  probe-set template with a sidecar manifest declaring the signed authoring decisions
+  (2026-07-22) — nem grading version, pre-registered greedy temperature-0 decoding, and a
+  hashed control linkage scored by option-logprob argmax — and lints probe sets against
+  them mechanically: per-probe `source`/`source_date`/`authored` provenance required, every
+  `source_date` must post-date the declared training cutoff, answers must survive `nem-1`
+  normalization, placeholders and stale control hashes refuse. `gaige probe run` now
+  enforces a present manifest: a set failing its own lint, or a run whose decoding
+  contradicts the declared greedy block, is refused with the remedy named. Manifest-less
+  sets run unchanged (declarations reported as unenforced). The manifest is a sidecar so
+  declaration edits never move the probe-file sha256 or the frozen vintage hashes.
 - **RAID corpus adapter** (`gaige corpus prepare-raid`): seeded slices of the RAID benchmark
   (Dugan et al., ACL 2024) with generator/domain/attack/decoding carried as subgroup axes on
   every row. Two sources: datasets-server paging (no 11.8 GB download; dataset revision sha
