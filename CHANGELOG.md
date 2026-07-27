@@ -6,10 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Measured numbers are quoted with the instrument that produced them, because a number without its
 instrument is not a result. Where a change altered what gaige *measures*, it says so explicitly.
 
-## [Unreleased] — 0.0.1, in development
+## [0.0.1] — 2026-07-26 (release-ready cut; PyPI publish rides the public flip)
 
-Not released. PyPI currently holds a `0.0.0` name-reservation stub only; the metadata for the
-first real release is staged in `pypi-stub/`.
+The first real release, cut and verified 2026-07-26. PyPI still holds the `0.0.0`
+name-reservation stub until the public flip — publishing is a separate, gated act.
+
+**Release verification (transcripts in the ops repo's release receipt):** 167 tests green ·
+ruff format clean · wheel + sdist built and twine-check PASSED (wheel sha256 `49161069…`) ·
+clean-environment installs on Python 3.10 / 3.12 / 3.13 · core install proven torch-free
+with the analyze lane replaying a pinned report bit-identically from the wheel · the
+documented quickstart command ran verbatim end-to-end on a pristine py3.10 CPU-only
+container (200 texts, 104 s, full receipt including the α=.005 conformal refusal).
+
+### Added (2026-07-26, release night — the CLI refusal surface)
+
+- **Refusals print as plain errors, never tracebacks.** Found by the outside-user pass:
+  a core-only install running a scoring command now gets
+  `error: scoring needs the GPU extra (torch is not installed)` with the exact
+  `pip install "gaige[gpu]"` remedy and a note that analysis commands run without it —
+  instead of a raw `ModuleNotFoundError`. Malformed corpora, missing files, and every
+  honest refusal (`ValueError`/`RuntimeError` family) surface as one-line errors with
+  exit code 2; tracebacks remain for genuinely unexpected bugs. Tests: 165 → 167.
 
 ### Added
 
@@ -309,8 +326,8 @@ first real release is staged in `pypi-stub/`.
 - Group-adaptive thresholds ship as REPORTING (per-subgroup rates with intervals), not as
   per-group thresholds. The guarantee-backed version (Mondrian conformal per bucket) needs
   ≥99 human samples per bucket at α=0.01 and is deliberately deferred rather than half-built.
-- Longitudinal drift measurement (run registry, probe runner, ECE, Page-Hinkley/CUSUM) is **not
-  built**. See `private-notes/longitudinal study-requirements-trace.md` for what is HAVE / PLANNED / GAP.
+- (A prior note here said longitudinal drift measurement was not built; the 2026-07-22
+  apparatus entries above — registry, probe runner, P(True)/ECE, monitors — superseded it.)
 
 ## [0.0.0] — 2026-07-21
 
