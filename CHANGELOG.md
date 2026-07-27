@@ -54,8 +54,8 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
 
 ### Added
 
-- **"Where gaige sits" positioning section** in the README (draft; wording pending
-  acceptance before any public surface): the 3-0-verified research fold — default-threshold
+- **"Where gaige sits" positioning section** in the README (accepted at the 2026-07-27
+  launch review): the 3-0-verified research fold — default-threshold
   miscalibration (RAID), cross-dataset collapse, global-threshold flagships, conformal
   calibration with its printed TPR price, and subgroup/decoding disparities — beside our own
   receipts (reference corpus, Binoculars global-threshold demo, first RAID slice). A
