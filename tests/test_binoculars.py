@@ -45,6 +45,8 @@ def test_real_math_smoke_on_tiny_shared_tokenizer_pair():
     ppl/x_ppl arithmetic runs on CPU in seconds. Asserts the score is finite, negative
     (negated ratio of two positive cross-entropies), deterministic, and that the
     fingerprint proves BOTH models."""
+    pytest.importorskip("torch", reason="real-math smoke scores through the [gpu] extra")
+    pytest.importorskip("transformers", reason="real-math smoke scores through the [gpu] extra")
     det = binoculars.Binoculars(
         observer_id="gpt2",
         performer_id="distilgpt2",
