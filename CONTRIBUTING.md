@@ -1,8 +1,8 @@
 # Contributing
 
 gaige is deliberately run with a **closed maintainership** while its calibration
-methodology stabilizes: every change is reviewed and approved by the maintainership —
-maintainer, no exceptions. This is a feature — an instrument-integrity tool whose own
+methodology stabilizes: every change is reviewed and approved by the maintainership,
+no exceptions. This is a feature — an instrument-integrity tool whose own
 supply chain must be beyond question.
 
 What that means in practice:
@@ -13,8 +13,8 @@ What that means in practice:
   not bureaucracy for its own sake: gaige is dual-licensed (AGPL-3.0 + commercial, see
   `COMMERCIAL.md`), and dual licensing requires a single copyright holder. Merging an
   unassigned patch would permanently remove the project's ability to offer commercial terms.
-- Security reports: open an issue with the label `security` (no sensitive corpus content
-  in public issues, ever).
+- Security reports: email **ghxrk13@proton.me** (see `SECURITY.md`) — never a public
+  issue, and no sensitive corpus content anywhere public, ever.
 
 If you disagree with a threshold, don't argue — run the harness on your corpus and post
 the receipt. That's the whole point of the tool.

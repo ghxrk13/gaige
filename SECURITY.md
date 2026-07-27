@@ -7,8 +7,8 @@ you an explicit account of its own trust boundaries.
 ## Reporting
 
 Email **ghxrk13@proton.me**. Please do not open a public issue for a suspected vulnerability.
-Expect an acknowledgement within a week; this is a small unfunded project, and
-that limitation is stated rather than papered over.
+Expect an acknowledgement within a week; this is a small unfunded project, and that
+limitation is stated rather than papered over.
 
 ## What gaige processes, and from where
 
