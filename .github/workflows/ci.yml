@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
-          python -m pip install pytest
+          python -m pip install pytest tomli
 
       - name: Assert the core imports without any GPU stack
         # If a torch/bitsandbytes import ever escapes to module scope, gaige silently stops
@@ -70,7 +70,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install ruff
+      # Pinned: matches the local/pre-commit gate. Newer ruff adds rule families this
+      # codebase hasn't adopted; adopting them is a deliberate change, not a CI surprise.
+      - run: python -m pip install ruff==0.15.22
       - name: ruff check
         run: ruff check gaige/ tests/
       - name: ruff format --check

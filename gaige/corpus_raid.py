@@ -223,8 +223,15 @@ def sample_csv(
     max_words: int,
 ) -> dict[str, list[dict]]:
     """Single streaming pass, per-cell reservoir sampling. Stdlib csv only."""
-    # RAID generations exceed the csv module's default 128 KiB field limit.
-    csv.field_size_limit(sys.maxsize)
+    # RAID generations exceed the csv module's default 128 KiB field limit. The setter
+    # takes a C long — 32-bit on Windows — so sys.maxsize overflows there; probe down.
+    _limit = sys.maxsize
+    while True:
+        try:
+            csv.field_size_limit(_limit)
+            break
+        except OverflowError:
+            _limit //= 2
     wanted = {c.key(): c for c in cells}
     reservoirs: dict[str, list[dict]] = {k: [] for k in wanted}
     seen: dict[str, int] = {k: 0 for k in wanted}
