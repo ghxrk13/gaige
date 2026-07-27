@@ -22,7 +22,7 @@
 ## 2026-07-22 — the statistical core: reviewed, fixed, wired, and property-tested
 
 **The adversarial review happened before the wiring**, in writing
-(`private-notes/research/conformal-subgroups-review-2026-07-22.md`), against the actual papers.
+(private research review, 2026-07-22), against the actual papers.
 `conformal.py`'s construction verified exact against Zhu arXiv:2505.05084 (quantile, strict
 flag rule, minimum-n bound — no off-by-one). Two things it *said* were wrong and now aren't:
 the "empirical_fpr" it returned was (n−k)/n by construction — a function of n and α dressed
@@ -58,13 +58,13 @@ provider earns `verified` the hard way: ollama's store is a content-addressed ch
 (tags digest → manifest → model-layer digest → weights blob) and gaige re-hashes BOTH
 links with its own hands — first live chain verification on qwen2.5:7b-instruct (weights
 sha256 2bada8a745…, 4.68 GB), probe series `10c246457f8d` registered same hour. Any served
-model is now a probe target with honest attestation; the bench store needed a reversible
+model is now a probe target with honest attestation; the bench's ollama store needed a reversible
 read-ACL (documented in the RUNBOOK with its undo). And `gaige plan` closes the loop the
 presentation rules demanded: feasibility + measured cost anchors that each NAME their
 receipt, attestation level, and deliberately NO quality column — a test enforces the
-legend. Live on bench it correctly said falcon-fp16 doesn't fit beside the daemon. Tests
+legend. Live on the bench it correctly said falcon-fp16 doesn't fit beside the daemon. Tests
 109 → 123. Alongside the code: THE CHECKPOINT strategy doc
-(`private-notes/strategy/continuity-longevity-plan-2026-07-22.md`) — HAVE/NEED/PATH/LONGEVITY
+(private continuity plan, 2026-07-22) — HAVE/NEED/PATH/LONGEVITY
 against both goals, P1–P4 standing order, the continuity contract stated plainly.
 
 **Same day, eighth pass — Burst 2b: the public line ships its two receipts.** Binoculars
@@ -80,7 +80,7 @@ moves it ~10% — quantization is an instrument parameter, and there is finally 
 that says so (falcon fp16 arm deferred to a daemon-free window). Tests 105 → 109. The
 build queue's public line (items 1-4 + 8) is now DONE.
 
-**Same day, seventh pass — M5: the battery is COMPLETE.** the operator pulled the change detectors
+**Same day, seventh pass — M5: the battery is COMPLETE.** The operator pulled the change detectors
 forward, and they were the right shape to pull: monitors replay registered series, so the
 evening's real series became their first input. Per-interval conformal alarms carry the
 marginal false-alarm bound (the methodological contribution, scoped exactly as the spec's
@@ -106,7 +106,7 @@ provenance → graded answers → attested providers → registered series → m
 bounds → M3's warning light. What remains before the pilot is the operator's side (real probe
 authoring, HF Llama access, external sign-offs) and the post-pilot M5 detectors, which replay
 registered series and lose nothing by waiting. Receipt of record:
-`private-notes/research/first-longitudinal-receipt-2026-07-22.md`.
+the private research notes (first longitudinal receipt, 2026-07-22).
 
 **Same day, fifth pass — apparatus Phase C: the warning light works.** M3 is real:
 P(True) read from logits under a versioned, fingerprinted, series-frozen template; ECE and
@@ -146,7 +146,7 @@ the first longitudinal receipt.
 
 **Same day, second pass — the four Fable-tagged judgment items, closed.** (1) Attestation
 levels sharpened and signed: `verified` now includes an artifact-hash path (GGUF sha256 /
-ollama digest matched against server identity), so the longitudinal spec's llama.cpp apparatus
+ollama digest matched against server identity), so the longitudinal llama.cpp apparatus
 will not rest on a server's word; `self-reported` is defined by whether an unchanged report
 is evidence of an unchanged instrument; `opaque` has an explicit permitted-claims list and a
 measured-during window. (2) Cross-instrument presentation rules adopted (ops

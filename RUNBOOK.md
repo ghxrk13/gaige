@@ -9,15 +9,15 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 
 | Machine | Role | Why |
 |---|---|---|
-| **bench** (Linux, RTX 5000 Ada 16 GB) | scoring runs, GPU work, apparatus | the only box with CUDA; the reference instrument lives here |
-| **win-seat** (Windows, no GPU) | authoring, `analyze`, reading reports | no CUDA — scoring will fall back to CPU, analysis runs fine |
-| **win-node** (Windows, always-on) | long jobs, cross-platform checking | second Windows box; catches Windows-only defects |
+| **gpu bench** (Linux, 16 GB CUDA card) | scoring runs, GPU work, apparatus | the only box with CUDA; the reference instrument lives here |
+| **win seat** (Windows, no GPU) | authoring, `analyze`, reading reports | no CUDA — scoring will fall back to CPU, analysis runs fine |
+| **win node** (Windows, always-on) | long jobs, cross-platform checking | second Windows box; catches Windows-only defects |
 
 `analyze`, `corpora` and the tests need **only numpy + requests**. Scoring needs the GPU extra.
 
 ## 1. Install
 
-**bench (the reference environment — do not casually upgrade it):**
+**gpu bench (the reference environment — do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
 ./.venv/bin/python -m pytest tests/ -q          # expect: 123 passed
@@ -26,7 +26,7 @@ The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13
 **transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
 fp16, which changes scores. gaige refuses such a load, but the pin avoids the fight.
 
-**the Windows seats (analysis only, no GPU):**
+**Windows seats (analysis only, no GPU):**
 ```
 cd %USERPROFILE%\personal\gaige
 python -m pip install -e .
@@ -41,7 +41,7 @@ so it cannot rot while other capabilities get built.
 ### 2a. Calibrate (needs a model; GPU strongly preferred)
 
 ```bash
-# reference instrument, on bench
+# reference instrument, on the gpu bench
 ./.venv/bin/python -m gaige.cli run --corpus hc3-mini --n 100 --seed 17 \
     --detector fast-detect-gpt --model tiiuae/falcon-7b --quant 4bit --device cuda
 ```
@@ -97,7 +97,7 @@ demonstrated. Quant A/B receipts, BOTH scales: gpt2-large fp32-vs-fp16 agree to 
 while 4-bit moves it ~10%; **falcon-7b: 4-bit shifts thr@1% from 1.9540 (fp16) to 2.1229
 (~8.6%)** — measured 2026-07-22 in a clean daemon window (canary pre=post 0.0946, |Δ|=0).
 Quantization is an instrument parameter at 0.7B and at 7B.
-Detail: `private-notes/research/burst2b-receipts-2026-07-22.md`.
+Detail: the private research notes (burst2b receipts, 2026-07-22).
 
 **No GPU?** It still works, with a smaller model:
 ```bash
@@ -226,7 +226,7 @@ First live measurement (gpt2 on the toy set): **accuracy 0%, mean P(True) ~79%, 
 
 ### 3d. The real-model apparatus (run live 2026-07-22)
 
-llama.cpp release binary at `~/personal/llamacpp/llama-b10091/` (bench); GGUF weights in
+llama.cpp release binary at `~/personal/llamacpp/llama-b10091/` (the bench); GGUF weights in
 `~/personal/models/`. The full loop, as actually run:
 
 ```bash
@@ -244,11 +244,11 @@ python -m gaige.cli probe run ... --register
 ```
 
 Measured on the first live series (Qwen2.5-1.5B q4_k_m, the non-gated stand-in for the
-gated Llama-3.2-1B the spec names): attestation **verified** by GGUF sha256 + server
+gated Llama-3.2-1B the longitudinal spec names): attestation **verified** by GGUF sha256 + server
 identity match · t0 accuracy 75% (n=12), t1 50% (n=8), 100% post-cutoff · replicate bound
 **±0.0% — served greedy decoding is deterministic, measured** · follow-up run "within run
 variance" · a temperature-0.3 run **forked its own series** rather than mixing. Receipt of
-record: `private-notes/research/first-longitudinal-receipt-2026-07-22.md`.
+record: the private research notes (first longitudinal receipt, 2026-07-22).
 
 ### 3e. M5 — drift monitors over a series (built 2026-07-22)
 
@@ -291,11 +291,11 @@ manifest; the manifest's model-layer digest names the weights blob; gaige re-has
 version-shaped identity); no digest → `opaque`; mismatch → loud, never upgraded. Store
 roots tried: `$OLLAMA_MODELS`, `~/.ollama/models`, `/usr/share/ollama/.ollama/models`.
 
-bench specifics: the ollama systemd service stores under `/usr/share/ollama` (mode 700,
+Bench specifics: the ollama systemd service stores under `/usr/share/ollama` (mode 700,
 service user), so `verified` needed a read-only ACL — granted 2026-07-22 with
 `setfacl -R -m u:<you>:rX /usr/share/ollama` (+ default ACL for new blobs); reverse with
 `setfacl -R -b /usr/share/ollama` if ever unwanted. Model LOADS still go through
-`~/bin/vram-guard.sh` (VRAM headroom rules) — the provider only talks to a model an
+a VRAM-guard wrapper (headroom rules) — the provider only talks to a model an
 operator already chose to serve. First live series: qwen2.5:7b-instruct, chain
 **verified**, 100% both vintages on the demo set, series `10c246457f8d`.
 
@@ -309,7 +309,7 @@ Prints the machine (CPUs/RAM/GPU free VRAM/served ollama models/llama-server pre
 a table of known configurations: fits-now verdict against measured floors, attestation
 level, and a measured runtime anchor NAMING its receipt. No quality column, deliberately —
 separation lives in receipts and does not transfer between configurations (the legend on
-every table says so; a test enforces it). Bench verdicts while the resident production scorer holds its
+every table says so; a test enforces it). Bench verdicts while the co-resident production scorer holds its
 VRAM: falcon-4bit fits, falcon-fp16 correctly "NO — needs 13.7 GB free, have ~11".
 
 ### 3h. Author a probe set (built 2026-07-26)
@@ -365,14 +365,13 @@ All four also run in CI on Linux and Windows across Python 3.10/3.12/3.13.
   `gaige run ... --resume reports/<dir>` (same corpus + instrument, or it refuses — resuming
   across an instrument change would interleave two instruments into one report). Verified:
   SIGKILL at 185/300, resumed, bit-identical to the uninterrupted run.
-- **A co-resident production scorer shares the bench's GPU.** It is the live submission gate — do not run
-  heavy GPU work during a production deadline window.
+- **A co-resident production scorer can share the GPU.** When one is resident it has priority —
+  schedule heavy GPU work around its quiet windows.
 - **Corpus labels are trusted.** gaige validates the *shape* of a corpus, never the correctness of
   its labels. Wrong labels produce confidently wrong thresholds; the sha256 at least makes it
   auditable.
 
 ## 6. Where things live
 
-- code + this file: `~/personal/gaige` (bench), `Documents\personal\gaige` (win-seat)
-- strategy, design notes, backlog, requirements trace: `private-notes` repo (all three machines)
-- start there at `private-notes/gaige-map.md`
+- code + this file: `~/personal/gaige` (bench), `Documents\personal\gaige` (Windows seats)
+- strategy, design notes, backlog, requirements trace: a private ops repo

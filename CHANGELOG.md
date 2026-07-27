@@ -108,7 +108,7 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
   thresholds, exact, no GPU needed) so detection cannot rot while other capabilities are built.
 - **Conformal thresholds, wired into every report** (2026-07-22, after adversarial review
   against arXiv:2505.05084 — review of record:
-  `private-notes/research/conformal-subgroups-review-2026-07-22.md`). Split-conformal order
+  the private research notes, conformal/subgroups review 2026-07-22). Split-conformal order
   statistic verified against the paper's construction (quantile, strict-inequality flag rule,
   minimum-n bound, all exact). The report states the guarantee as it is: **marginal over
   calibration draws, under exchangeability** — and prints the exact conditional dispersion
@@ -146,7 +146,7 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
   (remote endpoint, permissions) → `self-reported`; no digest → `opaque`; any mismatch
   anywhere is reported loudly and never upgraded. COMPLETE only (no stable full-vocab
   logprob API — MC control and P(True) stay on local-hf, same honesty as llamacpp).
-  First live receipt: qwen2.5:7b-instruct on bench, chain `verified` (weights sha256
+  First live receipt: qwen2.5:7b-instruct on the bench, chain `verified` (weights sha256
   `2bada8a745…`, 4.68 GB), 20 probes scored, series `10c246457f8d`.
 - **`gaige plan`**: what can THIS machine run, at what measured cost, with what
   attestation. Inspects CPUs/RAM/CUDA-free-VRAM/ollama/llama-server, prints fits-now
@@ -172,7 +172,7 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
   fp16-cuda agree on the 1%-FPR threshold to FOUR decimals (2.0461 vs 2.0462); **4-bit
   moves it ~10% (→2.2580)** and costs a point of TPR. Quantization is an instrument
   parameter, measured. **The falcon-7b fp16 arm was completed same night** in an
-  the operator-called daemon window (clean stop → run → restore; canary pre=post 0.0946, |Δ|=0):
+  operator-called daemon window (clean stop → run → restore; canary pre=post 0.0946, |Δ|=0):
   **4-bit shifts the 7B flagship's 1%-FPR threshold from 1.9540 to 2.1229 (~8.6%)**, AUROC
   CIs overlapping (no separation claim). The finding holds at both scales.
 - Tests: 105 → 109 (tokenizer-mismatch refusal via stubs, quant rules, protocol
@@ -185,7 +185,7 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
   reuse `conformal_threshold` on zero-drift reference values (Day-0 replicates) and carry
   the marginal finite-sample false-alarm bound, stated with the α×looks expected-false-alarm
   arithmetic; **Page-Hinkley** and **CUSUM** run with tuning constants recorded and NO
-  guarantee claimed (cumulative statistics — the honesty scoping of the longitudinal spec §5;
+  guarantee claimed (cumulative statistics — the honesty scoping of the longitudinal-measurement spec §5;
   conformal test martingales cited as the principled extension, unbuilt, unclaimed).
   `monitors.evaluate` scores any monitor against a known onset: detection latency + false
   alarms, M5's per-technique scorecard.
@@ -205,15 +205,15 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
 - `probes/demo.jsonl`: a committed, clean-room, 20-probe general-knowledge demo set in the
   signed schema (two vintages, aliases, provenance dates) — the documented material for
   smoke tests and the RUNBOOK walk-through.
-- First REAL longitudinal series, run live (receipt of record in private-notes): Qwen2.5-1.5B
+- First REAL longitudinal series, run live (receipt of record in the private notes): Qwen2.5-1.5B
   q4_k_m served by llama.cpp b10091 on CPU, attestation **verified** (GGUF sha256 matched
   the server's reported artifact — the sharpened attestation design working on real
   infrastructure, first try); Day-0 replicates measured the variance bound at ±0.0% (served
   greedy decoding is deterministic — measured, not assumed); follow-up run within variance;
   a temperature change forked its own series live. Qwen is the staged non-gated fallback
-  for the gated Llama-3.2-1B the spec names.
+  for the gated Llama-3.2-1B the longitudinal spec names.
 - `registry/` added to .gitignore (measurement state is machine-local; receipts of record
-  are copied into private-notes deliberately).
+  are copied into the private notes deliberately).
 
 ### Added (2026-07-22, apparatus Phase C — M3, calibration drift)
 

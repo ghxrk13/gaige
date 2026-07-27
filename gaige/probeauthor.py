@@ -4,7 +4,7 @@
 
 """Probe authoring toolchain: template generator + schema lint.
 
-Probe authoring is constrained by signed decisions (longitudinal instruments spec, 2026-07-22). The
+Probe authoring is constrained by signed decisions (the longitudinal instruments spec, 2026-07-22). The
 four that bind the probe-set artifact are enforced here mechanically, not editorially:
 
   a. grading is normalized exact match plus authored aliases — the set DECLARES the grading

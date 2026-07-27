@@ -4,13 +4,13 @@
 
 """M5: sequential drift monitors over registered series, with honest alarm thresholds.
 
-The comparison the spec needs: run candidate monitors over the SAME longitudinal series
+The comparison the longitudinal spec needs: run candidate monitors over the SAME longitudinal series
 and report, per monitor, DETECTION LATENCY (intervals from a known onset to the first
 alarm) and FALSE ALARMS (alarms before onset / on zero-drift data). Monitors never touch a
 model — they replay what the registry recorded, which is why building them after real
 series exist costs nothing.
 
-Where the thresholds come from is the point (longitudinal spec section 5, scoped honestly):
+Where the thresholds come from is the point (longitudinal-measurement spec §5, scoped honestly):
 
 - PER-INTERVAL monitors (an alarm rule applied to each interval's value independently) get
   a **conformal threshold** calibrated on zero-drift reference values (Day-0 replicates,

@@ -17,8 +17,8 @@ Capabilities: COMPLETE only. Ollama exposes no stable full-vocabulary logprob AP
 MC control path and P(True) stay on local-hf — declaring less than what might work beats
 computing something that looks fine and means nothing (same honesty as llamacpp).
 
-Fleet note (bench): model LOADS go through vram-guard.sh per the fleet's VRAM rules; this
-provider only talks to a model an operator already chose to serve.
+Co-residency note: on a shared box, model loads defer to whatever guard protects resident
+VRAM consumers; this provider only talks to a model an operator already chose to serve.
 """
 
 from __future__ import annotations

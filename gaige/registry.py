@@ -4,7 +4,7 @@
 
 """The run registry: comparable series over time, with instrument constancy ENFORCED.
 
-The spec's hardest validity question is "is the change in the model, or in the measuring
+The longitudinal spec's hardest validity question is "is the change in the model, or in the measuring
 pipeline?" The registry is the mechanical answer: runs land in a series keyed by the hash
 of the instrument identity (provider identity + decoding + grading + cutoff + gaige
 version), and a run whose identity differs is REFUSED with the mismatched fields named —
