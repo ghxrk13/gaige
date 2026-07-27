@@ -31,6 +31,7 @@ SHIPPED_DOCS = [
     "RUNBOOK.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
+    "SUPPORT.md",
     "TRADEMARK.md",
     "COMMERCIAL.md",
 ]

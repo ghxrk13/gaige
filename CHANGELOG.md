@@ -18,6 +18,30 @@ with the analyze lane replaying a pinned report bit-identically from the wheel �
 documented quickstart command ran verbatim end-to-end on a pristine py3.10 CPU-only
 container (200 texts, 104 s, full receipt including the α=.005 conformal refusal).
 
+### Added (2026-07-27, launch prep — the import surface and the pointers)
+
+- **A public Python API.** `import gaige` now carries the supported library surface — the
+  calibrate/conformal/analyze spine re-exported with a 25-name `__all__`, including the
+  refusal types (`CorpusTooSmall`, `InsufficientCalibration`, `NotAReport`) so a caller can
+  catch them where the functions live. Enforced, not remembered: `tests/test_public_api.py`
+  pins the exact list, proves every promised name resolves, and asserts in a fresh
+  interpreter that `import gaige` never imports torch. Everything outside `__all__` stays
+  internal. (Fixed en route: the re-exports exposed a circular import — `analyze.py` reads
+  `from . import __version__` at module scope, so the version is now assigned before the
+  re-exports.)
+- **PyPI metadata for strangers**: `[project.urls]` — Homepage (gaige.dev), Documentation,
+  Repository, Issues, Changelog, and Funding (ko-fi.com/gaigedev, rendered natively by
+  PyPI) — plus trove classifiers and keywords. The project page stops being bare.
+- **README rewritten for someone who has never seen the repo**: `pip install gaige`
+  quickstart (the old `pip install -e .` line was a from-source habit), the CPU-torch note
+  (on CPU-only machines the `[gpu]` extra pulls the multi-gigabyte CUDA torch; install the
+  CPU build first and the extra leaves it alone), a Python API example — sized to clear the
+  50-per-class floor, because the first draft raised `CorpusTooSmall`, which running the
+  example caught — and the gaige.dev / PyPI / issues / fuel pointers.
+- **SUPPORT.md** (best-effort, receipts-first, no SLAs; registered in the claims-policy
+  shipped-docs list so its prose is held to the same bar) and **.github/FUNDING.yml**
+  (`ko_fi: gaigedev` — lights the repo Sponsor button). Tests: 176 → 182.
+
 ### Added (2026-07-26, release night — the CLI refusal surface)
 
 - **Refusals print as plain errors, never tracebacks.** Found by the outside-user pass:

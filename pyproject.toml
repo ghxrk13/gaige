@@ -10,12 +10,46 @@ dependencies = [
     "numpy>=1.26",
     "requests>=2.31",
 ]
+keywords = [
+    "calibration",
+    "roc",
+    "auroc",
+    "conformal-prediction",
+    "ai-detection",
+    "drift",
+    "false-positive-rate",
+    "error-bars",
+    "metrology",
+    "receipts",
+]
+# No License classifier on purpose: the `license` field above is the record, and recent
+# setuptools deprecates carrying both.
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 
 [project.optional-dependencies]
 # GPU detectors expect these in the environment; versions are recorded in every receipt.
 # transformers pinned <5: 5.14.1 measured (2026-07-21) silently ignoring 4-bit config
 # (eetq misroute -> fp16 load). See PROGRESS.md incident receipt.
 gpu = ["torch", "transformers>=4.45,<5", "bitsandbytes", "accelerate"]
+
+[project.urls]
+Homepage = "https://gaige.dev"
+Documentation = "https://gaige.dev/package.html"
+Repository = "https://github.com/ghxrk13/gaige"
+Issues = "https://github.com/ghxrk13/gaige/issues"
+Changelog = "https://github.com/ghxrk13/gaige/blob/main/CHANGELOG.md"
+Funding = "https://ko-fi.com/gaigedev"
 
 [project.scripts]
 gaige = "gaige.cli:main"
