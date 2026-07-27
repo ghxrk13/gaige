@@ -3,6 +3,10 @@
 **Calibration and drift receipts for AI measurement.** Your corpus, your thresholds, honest
 error bars — and a fingerprint that proves the instrument hasn't changed underneath you.
 
+[gaige.dev](https://gaige.dev) · [PyPI](https://pypi.org/project/gaige/) ·
+[issues](https://github.com/ghxrk13/gaige/issues) ·
+[fuel the instrument](https://ko-fi.com/gaigedev)
+
 ## Why
 
 Any score you act on comes from an *instrument*, and that instrument's numbers depend on the
@@ -38,11 +42,49 @@ CPU-only machine, or an isolated environment with no accelerator at all.
 ## Quickstart
 
 ```bash
-pip install -e .            # plus torch/transformers/bitsandbytes in your GPU env
+pip install gaige                 # analysis only — numpy + requests, no torch
+pip install "gaige[gpu]"          # scoring too: torch/transformers/bitsandbytes/accelerate
 gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt
 # → reports/<ts>/report.md + scores.csv + roc.json + env.json
 gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
 ```
+
+On a CPU-only machine the `[gpu]` extra pulls the multi-gigabyte CUDA build of torch by
+default. Install the small CPU build first and the extra will leave it alone:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install "gaige[gpu]"
+```
+
+From a source checkout: `pip install -e .`
+
+## Python API
+
+The CLI is the primary interface. For library use, `import gaige` carries the supported
+surface — the calibrate/conformal/analyze spine. It never imports torch, so it runs where a
+model never could: a laptop, a CI job, an air-gapped review machine.
+
+```python
+from pathlib import Path
+import numpy as np
+import gaige
+
+# Replay an existing report — recompute every statistic from its scores.csv.
+rows, corpus, meta = gaige.load_report(Path("reports/2026-07-26T18-02-11Z"))
+results = gaige.compute_results(rows)
+
+# Or bring scores from any instrument of your own (gaige refuses under 50 per class —
+# CorpusTooSmall — because a threshold fitted on less is a guess).
+rng = np.random.default_rng(17)
+scores = np.concatenate([rng.normal(0, 1, 100), rng.normal(2, 1, 100)])
+labels = np.array(["human"] * 100 + ["ai"] * 100)
+gaige.auroc(scores, labels)
+gaige.threshold_at_fpr(scores, labels, target_fpr=0.01)   # measured, labeled in-sample
+gaige.conformal_threshold(scores[labels == "human"], alpha=0.05)  # finite-sample bound;
+# raises InsufficientCalibration when your n cannot support the alpha you asked for.
+```
+
+Everything not in `gaige.__all__` is internal and may move without notice.
 
 ## What it will never do
 
@@ -51,11 +93,6 @@ gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"
 - Pretend one corpus generalizes. Every report says what it was measured on.
 
 ## Where gaige sits
-
-<!-- DRAFT (research fold v1, 2026-07-27, auto/nightly): wording pending acceptance before any
-public surface. Every third-party number below survived 3-0 adversarial verification against
-its primary source; every first-party number names its instrument and has a receipt in repo
-history. Fold of record: private-notes/research/detection-research-2026-07-21.md. -->
 
 The detection literature of 2024–2026 converged on exactly what gaige does — fixed-FPR
 operating points, calibrated in-domain, reported with error bars — while producing steady
@@ -146,3 +183,10 @@ keeps meaning something.
 
 Maintainership is deliberately closed (see `CONTRIBUTING.md`) — issues and receipt-backed
 reproductions very welcome; pull requests not accepted at this time.
+
+## Fuel
+
+gaige stays free and AGPL. If it saved you from acting on an uncalibrated number,
+[a coffee's worth](https://ko-fi.com/gaigedev) buys GPU time and corpora — the roadmap on
+[gaige.dev](https://gaige.dev/roadmap.html) shows exactly what fuel accelerates. Support
+never buys a different answer; credibility features are never paid.
