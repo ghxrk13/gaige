@@ -23,7 +23,10 @@ import re
 import sys
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # stdlib tomllib arrives in 3.11; py3.10 uses the backport
+    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 HEADER = "# gaige — calibration and drift receipts for AI measurement."
