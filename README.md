@@ -16,14 +16,15 @@ nobody who relies on a score knows its actual error rate on their own material; 
 marketing page. When the consequence lands on a real person, "the tool said 87%" is not
 evidence.
 
-gaige takes a corpus or probe set and any pluggable scorer, and emits a **receipts report**:
-ROC + AUROC with bootstrap confidence intervals, operating thresholds two ways — empirical
-(target FPR with the in-sample rate labeled as exactly that) and conformal (a finite-sample
-guarantee, stated honestly as marginal) — per-subgroup error rates with intervals, base-rate
-harm arithmetic, and a complete instrument fingerprint — model,
-quantization **verified at load time** (some library combos silently ignore 4-bit and load
-fp16, which shifts scores; gaige refuses to emit numbers from a load it can't prove), device,
-versions, corpus hash, and the exact reproduce command.
+Point gaige at a corpus or a probe set, give it any pluggable scorer, and what comes back is
+a **receipts report**. Inside it: the ROC and AUROC with bootstrap confidence intervals, and
+operating thresholds computed two ways — an empirical target-FPR threshold whose in-sample
+rate is labeled as exactly that, and a conformal one carrying a finite-sample guarantee,
+stated honestly as marginal. Error rates arrive per subgroup with intervals, the base-rate
+harm arithmetic is done for you, and the whole thing sits on an instrument fingerprint:
+model, device, versions, corpus hash, the exact reproduce command, and quantization
+**verified at load time** — some library combos silently ignore 4-bit and load fp16, which
+shifts scores, so gaige refuses to emit numbers from a load it can't prove.
 
 **Two applications of one machine:**
 
@@ -186,7 +187,8 @@ reproductions very welcome; pull requests not accepted at this time.
 
 ## Fuel
 
-gaige stays free and AGPL. If it saved you from acting on an uncalibrated number,
-[a coffee's worth](https://ko-fi.com/gaigedev) buys GPU time and corpora — the roadmap on
-[gaige.dev](https://gaige.dev/roadmap.html) shows exactly what fuel accelerates. Support
-never buys a different answer; credibility features are never paid.
+The fuel link is at [ko-fi.com/gaigedev](https://ko-fi.com/gaigedev). A coffee's worth
+genuinely helps, and it goes where [the roadmap](https://gaige.dev/roadmap.html) says it
+goes — GPU hours mostly, corpus licensing when one comes up. gaige itself stays AGPL and
+free no matter what happens here, and no amount of support has ever changed a number this
+tool prints.
