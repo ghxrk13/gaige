@@ -11,7 +11,7 @@ Beta(n+1-k, k) whose mean and sd conformal_threshold reports. An off-by-one in t
 statistic shifts that law by 1/(n+1), which these tolerances resolve decisively;
 test_off_by_one_would_break_the_bound demonstrates the detection margin, and the suite was
 additionally run once against a deliberately broken k to confirm it goes red (recorded in
-private-notes/research/conformal-subgroups-review-2026-07-22.md).
+the private research review of 2026-07-22).
 """
 
 from __future__ import annotations

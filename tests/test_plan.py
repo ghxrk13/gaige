@@ -42,7 +42,7 @@ def test_cuda_roomy_fits_everything_gpu():
 
 
 def test_cuda_tight_excludes_fp16_keeps_4bit():
-    """The real bench-beside-the-daemon shape: 11.5 GB free."""
+    """The real bench-beside-a-resident-scorer shape: 11.5 GB free."""
     rows = by_config(
         plan.build_plan(env(cuda=True, gpu_name="X", vram_total_gb=16.4, vram_free_gb=11.5))
     )

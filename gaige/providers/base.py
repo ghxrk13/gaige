@@ -6,7 +6,7 @@
 
 A provider is a weaker instrument than an in-process load unless proven otherwise, and
 pretending otherwise would gut the thesis. So every provider carries an ATTESTATION level
-on every receipt (design: private-notes/design-byo-ai.md, sharpened 2026-07-22):
+on every receipt (design note, sharpened 2026-07-22):
 
   verified       gaige structurally proved the artifact — an in-process load with proof,
                  or a local artifact hash (GGUF sha256 / ollama digest) matching the
