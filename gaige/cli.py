@@ -855,7 +855,23 @@ def main(argv=None) -> int:
     s.set_defaults(fn=cmd_score)
 
     args = p.parse_args(argv)
-    return args.fn(args)
+    try:
+        return args.fn(args)
+    except ModuleNotFoundError as e:
+        if e.name in ("torch", "transformers", "bitsandbytes", "accelerate"):
+            print(
+                f"error: scoring needs the GPU extra ({e.name} is not installed).\n"
+                'Install it with:  pip install "gaige[gpu]"\n'
+                "Analysis commands (analyze, plan, corpora, series) run without it.",
+                file=sys.stderr,
+            )
+            return 2
+        raise
+    except (ValueError, RuntimeError, FileNotFoundError) as e:
+        # Refusals are expected outputs, not crashes: print the message, keep the
+        # traceback for genuinely unexpected error types only.
+        print(f"error: {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
