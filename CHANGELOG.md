@@ -30,6 +30,14 @@ container (200 texts, 104 s, full receipt including the α=.005 conformal refusa
 
 ### Added
 
+- **"Where gaige sits" positioning section** in the README (draft; wording pending
+  acceptance before any public surface): the 3-0-verified research fold — default-threshold
+  miscalibration (RAID), cross-dataset collapse, global-threshold flagships, conformal
+  calibration with its printed TPR price, and subgroup/decoding disparities — beside our own
+  receipts (reference corpus, Binoculars global-threshold demo, first RAID slice). A
+  claims-policy test now enforces the fold's blocked list across every shipped document and
+  requires each number in the section to name its paper or its instrument — the
+  no-overclaiming rule as a test, not an editorial habit.
 - **Probe-authoring toolchain** (`gaige probe new` + `gaige probe lint`): scaffolds a
   probe-set template with a sidecar manifest declaring the signed authoring decisions
   (2026-07-22) — nem grading version, pre-registered greedy temperature-0 decoding, and a
