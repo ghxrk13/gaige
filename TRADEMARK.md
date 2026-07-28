@@ -6,7 +6,7 @@ rights, and "gaige" is the project's mark, owned by ghxrk13.
 
 This is not a technicality for a tool like this one. gaige exists so that a number can be
 trusted because of how it was produced. If anyone could ship anything and call it gaige, a
-report bearing the name would prove nothing — which is exactly the failure mode the project
+report bearing the name would prove nothing, which is exactly the failure mode the project
 was built to fix.
 
 ## You may, without asking
@@ -16,7 +16,7 @@ was built to fix.
   (accurate, descriptive references to origin).
 - Publish reports gaige produced, including commercially, and say gaige produced them.
 - Write about, teach, review, or criticize the project by name.
-- Fork it — under a different name.
+- Fork it, but under a different name.
 
 ## You may not, without written permission
 
@@ -31,7 +31,7 @@ was built to fix.
 
 Anyone authorized to use the mark must:
 
-1. Keep the receipt fields intact — instrument fingerprint (model, quantization **verified**,
+1. Keep the receipt fields intact: instrument fingerprint (model, quantization **verified**,
    library versions, hardware), corpus identity and hash, error rates with their uncertainty
    and their labels (in-sample vs guaranteed), and the reproduce command. Removing or
    falsifying these forfeits use of the name.
@@ -42,7 +42,7 @@ Anyone authorized to use the mark must:
 
 ## How permissions are supervised
 
-A written policy alone does not keep a mark alive — naked-licensing doctrine
+A written policy alone does not keep a mark alive: naked-licensing doctrine
 (FreecycleSunnyvale v. Freecycle Network, 626 F.3d 509, 9th Cir. 2010) abandoned marks whose
 owner had a written standard but no retained control right and no actual supervision. So:
 every written permission granted under this policy **retains the right to review the

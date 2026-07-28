@@ -10,20 +10,20 @@ traps that have actually bitten. If something here is wrong or unclear, that is 
 | Machine | Role | Why |
 |---|---|---|
 | **gpu bench** (Linux, 16 GB CUDA card) | scoring runs, GPU work, apparatus | the only box with CUDA; the reference instrument lives here |
-| **win seat** (Windows, no GPU) | authoring, `analyze`, reading reports | no CUDA — scoring will fall back to CPU, analysis runs fine |
+| **win seat** (Windows, no GPU) | authoring, `analyze`, reading reports | no CUDA; scoring will fall back to CPU, analysis runs fine |
 | **win node** (Windows, always-on) | long jobs, cross-platform checking | second Windows box; catches Windows-only defects |
 
 `analyze`, `corpora` and the tests need **only numpy + requests**. Scoring needs the GPU extra.
 
 ## 1. Install
 
-**gpu bench (the reference environment — do not casually upgrade it):**
+**gpu bench (the reference environment: do not casually upgrade it):**
 ```bash
 cd ~/personal/gaige
 ./.venv/bin/python -m pytest tests/ -q          # expect: all green (182 at 0.0.1)
 ```
 The pinned venv is transformers 4.49 / torch 2.13.0+cu130 / bnb 0.49.2 / cuda 13.0 / py 3.12.3.
-**transformers must stay <5** — 5.14.1 was measured silently ignoring 4-bit config and loading
+**transformers must stay <5**, because 5.14.1 was measured silently ignoring 4-bit config and loading
 fp16, which changes scores. gaige refuses such a load, but the pin avoids the fight.
 
 **Windows seats (analysis only, no GPU):**
@@ -33,7 +33,7 @@ python -m pip install -e .
 python -m pytest tests/ -q                      # expect: all green (182 at 0.0.1)
 ```
 
-## 2. Workflow A — calibrate a detector, then score documents
+## 2. Workflow A: calibrate a detector, then score documents
 
 This is the original detection workflow. It is pinned in CI (`tests/test_reference_instrument.py`)
 so it cannot rot while other capabilities get built.
@@ -46,7 +46,7 @@ so it cannot rot while other capabilities get built.
     --detector fast-detect-gpt --model tiiuae/falcon-7b --quant 4bit --device cuda
 ```
 
-RAID slices (harder, attack/domain-stratified — added 2026-07-25): prepare first, then run
+RAID slices (harder, attack/domain-stratified, added 2026-07-25): prepare first, then run
 the produced path. Slices are fetched at preparation time (datasets-server pages; or
 `--source csv` against a downloaded RAID csv) and never enter git.
 
@@ -70,18 +70,18 @@ automatically (universal meta keys). Slice thresholds describe that slice, nothi
 [receipt] conformal a=0.01: thr=2.4446 TPR=76.0% (marginal FPR guarantee <= 0.01)
 [receipt] conformal a=0.005: refused (alpha=0.005 needs >= 199 human calibration samples, got 100. ...)
 ```
-Those exact numbers are the reference. **If they differ, something about the instrument changed** —
+Those exact numbers are the reference. **If they differ, something about the instrument changed**:
 check the fingerprint section of `report.md` before trusting anything downstream.
 
 Read the two threshold families as: `FPRcal` rows are fitted on this sample (in-sample, no
 guarantee); `conformal` rows carry a finite-sample guarantee that is **marginal over calibration
-draws** — note the α=0.01 conformal threshold is deliberately stricter (2.4446 vs 2.1229) and
+draws**; note the α=0.01 conformal threshold is deliberately stricter (2.4446 vs 2.1229) and
 catches less (76% vs 86%): that gap is the price of an actual guarantee. The α=0.005 refusal at
 n=100 is correct behavior, not an error. `report.md` also now carries per-subgroup rate tables
-(rates below n=20 per class are withheld — counts speak instead) and a base-rate section
+(rates below n=20 per class are withheld: counts speak instead) and a base-rate section
 (`--harm-volume` sets your institution's yearly volume; default is Vanderbilt's published 75,000).
 
-**Detector #2 — Binoculars** (built 2026-07-22; two 7B models, effectively GPU-only):
+**Detector #2: Binoculars** (built 2026-07-22; two 7B models, effectively GPU-only):
 
 ```bash
 ./.venv/bin/python -m gaige.cli run --corpus hc3-mini --n 100 --seed 17 \
@@ -90,12 +90,12 @@ n=100 is correct behavior, not an error. `report.md` also now carries per-subgro
 
 Measured on the reference corpus: **AUROC 0.9992**, TPR 97% @1%FPR (thr −0.7829; gaige
 emits the NEGATED Binoculars ratio so higher = more AI-like), conformal α=.01 → 95% TPR.
-Fingerprint proves BOTH models (256 Linear4bit, ~8.1 GB — the VRAM ceiling beside the
+Fingerprint proves BOTH models (256 Linear4bit, ~8.1 GB, the VRAM ceiling beside the
 daemon). The paper's global thresholds are deliberately not used: measured on this corpus
-they run at **16%** (accuracy-mode) and **3%** (low-FPR-mode) FPR — the receipts gap,
+they run at **16%** (accuracy-mode) and **3%** (low-FPR-mode) FPR: the receipts gap,
 demonstrated. Quant A/B receipts, BOTH scales: gpt2-large fp32-vs-fp16 agree to 4 decimals on thr@1%
 while 4-bit moves it ~10%; **falcon-7b: 4-bit shifts thr@1% from 1.9540 (fp16) to 2.1229
-(~8.6%)** — measured 2026-07-22 in a clean daemon window (canary pre=post 0.0946, |Δ|=0).
+(~8.6%)**, measured 2026-07-22 in a clean daemon window (canary pre=post 0.0946, |Δ|=0).
 Quantization is an instrument parameter at 0.7B and at 7B.
 Detail: the private research notes (burst2b receipts, 2026-07-22).
 
@@ -104,7 +104,7 @@ Detail: the private research notes (burst2b receipts, 2026-07-22).
 python -m gaige.cli run --corpus hc3-mini --n 50 --model gpt2 --quant fp32 --device cpu --max-tokens 512
 ```
 Measured on the bench's CPU: 100 samples in ~11 s, AUROC 0.9908. **This is a different instrument**
-than the GPU one — its thresholds are not interchangeable (4.2276 vs 2.1229 at 1% FPR). The
+than the GPU one: its thresholds are not interchangeable (4.2276 vs 2.1229 at 1% FPR). The
 receipt records `device: cpu` and gaige will warn if you try to use one report's thresholds in the
 other's environment.
 
@@ -113,14 +113,14 @@ and records `model_auto_selected` on the receipt. The CPU default is a **measure
 (2026-07-22, six candidates on hc3-mini n=100 seed=17, fp32/cpu): gpt2-large was the only
 candidate with perfect separation on that corpus (AUROC 1.0000; TPR 100% at 1%-FPR and at
 conformal α=.01) at 0.64 s/sample, dominating gpt2-xl and gpt-neo-1.3B on both axes. One
-corpus, one protocol — a default-selection receipt, not a detector ranking; each candidate's
+corpus, one protocol: a default-selection receipt, not a detector ranking; each candidate's
 run is reproducible with the command above plus `--model <name>`.
 
-**Device policy (decided 2026-07-22):** `--device auto` is for exploratory runs — it prefers
+**Device policy (decided 2026-07-22):** `--device auto` is for exploratory runs: it prefers
 CUDA, falls back to CPU loudly, and the receipt records the fallback. **Pre-registered or
 scientific runs pin `--device` explicitly** (the run registry treats device class as
 instrument identity, so a mid-series fallback forks the series). Either way the receipt's
-reproduce command always carries the RESOLVED device, never "auto" — re-running a receipt can
+reproduce command always carries the RESOLVED device, never "auto", so re-running a receipt can
 never silently swap instruments.
 
 ### 2b. Score a document against that calibration
@@ -131,7 +131,7 @@ python -m gaige.cli score --report reports/<ts>-fast-detect-gpt/ --text "some te
 cat draft.md | python -m gaige.cli score --report reports/<ts>-fast-detect-gpt/
 ```
 
-The document is **never written anywhere** — no log, no cache, no telemetry. That is tested
+The document is **never written anywhere**: no log, no cache, no telemetry. That is tested
 (`tests/test_privacy.py`), not merely promised.
 
 Read the output as: the score, where it sits against the calibration corpus, and whether it crosses
@@ -148,10 +148,10 @@ Recomputes AUROC, thresholds, CIs and a fresh report from scores that already ex
 `analyze` share one code path, so a replay reproduces the original numbers exactly. Use it to
 change `--n-boot`, regenerate a report, or do analysis on a machine with no GPU.
 
-Analysing a bare `scores.csv` with no `env.json` produces a report that says **INSTRUMENT UNKNOWN**
-— deliberately, because those thresholds attest to nothing.
+Analysing a bare `scores.csv` with no `env.json` produces a report that says **INSTRUMENT UNKNOWN**,
+deliberately, because those thresholds attest to nothing.
 
-## 3. Workflow B — longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
+## 3. Workflow B: longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
 
 ### 3a. Run a probe set (built 2026-07-22)
 
@@ -161,7 +161,7 @@ python -m gaige.cli probe run --probes probes.jsonl --provider local-hf \
 ```
 
 Probe JSONL rows: `{"id","prompt","answer","vintage","source","source_date"}` plus optional
-`aliases`/`authored` — the loader refuses anything less, naming the row and the remedy.
+`aliases`/`authored`: the loader refuses anything less, naming the row and the remedy.
 Output: `reports/<ts>-probes/` with `report.md` (accuracy per vintage with 95% CI, the
 per-vintage **post-cutoff share** vs `--cutoff`, full fingerprint incl. attestation +
 decoding + grading version), `answers.csv`, and a crash-safe partial while running
@@ -169,11 +169,11 @@ decoding + grading version), `answers.csv`, and a crash-safe partial while runni
 
 **What correct looks like:** greedy is the default (temperature 0, pre-registered); the
 provider line prints its attestation (`verified` for local-hf; llamacpp earns
-verified/self-reported/opaque — pass `--gguf` to hash the artifact). A NON-local endpoint
+verified/self-reported/opaque: pass `--gguf` to hash the artifact). A NON-local endpoint
 refuses to receive text without `--allow-remote-text`; that is a security property.
 
 **Grading is deliberately strict** (normalized exact match + authored aliases, version
-`nem-1`): a base model that rambles past the answer grades WRONG — measured on gpt2, which
+`nem-1`): a base model that rambles past the answer grades WRONG: measured on gpt2, which
 answered "The capital of France is" with "the capital of the French Republic, and" (graded
 False, correctly). Use an instruct model and author prompts that elicit short answers; the
 prompt is part of the instrument.
@@ -196,16 +196,16 @@ python -m gaige.cli series show <series-id> --registry registry
 ```
 
 A series is keyed by the instrument identity hash (provider identity + decoding + grading
-version + cutoff + gaige version). A changed instrument **forks a new series** — never
+version + cutoff + gaige version). A changed instrument **forks a new series**, never
 mixes. Within a series, a vintage label is **frozen**: re-running an edited "t0" is refused
-by name (author a new vintage instead); NEW vintage labels are welcome — that is the
+by name (author a new vintage instead); NEW vintage labels are welcome: that is the
 longitudinal design. The series report shows accuracy per vintage per run, the measured
-run-variance bound from the replicates (±0.0% on a deterministic pipeline — a result, not
+run-variance bound from the replicates (±0.0% on a deterministic pipeline: a result, not
 an assumption), and flags each later run's movement as within-variance or BEYOND the bound.
 
-### 3c. M3 — calibration drift (built 2026-07-22)
+### 3c. M3: calibration drift (built 2026-07-22)
 
-Add `--ptrue` to any probe run (needs a provider with option_logprobs — local-hf has it;
+Add `--ptrue` to any probe run (needs a provider with option_logprobs: local-hf has it;
 llamacpp deliberately does not yet):
 
 ```bash
@@ -218,10 +218,10 @@ logits** (Kadavath-style; a forward pass, no sampling; the template is hashed in
 fingerprint and FROZEN per series once M3 has run). The receipt gains an M3 table: mean
 P(True), accuracy, the **confidence-accuracy gap** (positive = overconfident), and **ECE**
 with a bootstrap CI (bin count fixed per series). Toggling `--ptrue` on a later run does NOT
-fork the series (the M1 instrument is unchanged) — but resuming a half-finished run with it
+fork the series (the M1 instrument is unchanged), but resuming a half-finished run with it
 toggled refuses, and a changed template refuses at registration.
 
-First live measurement (gpt2 on the toy set): **accuracy 0%, mean P(True) ~79%, gap +79%** —
+First live measurement (gpt2 on the toy set): **accuracy 0%, mean P(True) ~79%, gap +79%**:
 "fluent and authoritative whilst quietly wrong," demonstrated by the smoke test itself.
 
 ### 3d. The real-model apparatus (run live 2026-07-22)
@@ -246,31 +246,31 @@ python -m gaige.cli probe run ... --register
 Measured on the first live series (Qwen2.5-1.5B q4_k_m, the non-gated stand-in for the
 gated Llama-3.2-1B the longitudinal spec names): attestation **verified** by GGUF sha256 + server
 identity match · t0 accuracy 75% (n=12), t1 50% (n=8), 100% post-cutoff · replicate bound
-**±0.0% — served greedy decoding is deterministic, measured** · follow-up run "within run
+**±0.0%: served greedy decoding is deterministic, measured** · follow-up run "within run
 variance" · a temperature-0.3 run **forked its own series** rather than mixing. Receipt of
 record: the private research notes (first longitudinal receipt, 2026-07-22).
 
-### 3e. M5 — drift monitors over a series (built 2026-07-22)
+### 3e. M5: drift monitors over a series (built 2026-07-22)
 
 ```bash
 python -m gaige.cli series watch <series-id> --registry registry \
     [--vintage t0] [--quantity accuracy|gap] [--alpha 0.2] [--direction down|up]
 ```
 
-Replays a registered series through the monitor panel — no model touched. Three monitors,
+Replays a registered series through the monitor panel: no model touched. Three monitors,
 graded honestly:
-- **conformal-interval** — per-interval alarm with a **marginal finite-sample false-alarm
+- **conformal-interval**: per-interval alarm with a **marginal finite-sample false-alarm
   bound** (≤ α per look; expected false alarms = α × looks), calibrated on the Day-0
-  replicates. Needs `ceil(1/α)−1` zero-drift reference intervals: **α=0.2 needs 4 — one
+  replicates. Needs `ceil(1/α)−1` zero-drift reference intervals: **α=0.2 needs 4, one
   more replicate than the k=3 Day-0 default**, so run Day-0 with `--replicates 4` if you
   want conformal alarms from the start. Refuses honestly below that.
-- **page-hinkley** and **cusum** — the drift-literature detectors (Gama/Webb lineage),
+- **page-hinkley** and **cusum**: the drift-literature detectors (Gama/Webb lineage),
   cumulative statistics with tuning constants (δ/λ, k/h) recorded on the receipt and **no
   guarantee claimed** (interval exchangeability does not apply to a cumulative statistic;
   conformal test martingales are the principled extension, future work).
 
 Output prints and lands as `monitors-report.md` in the series directory. `monitors.evaluate`
-scores any monitor against a known onset (detection latency + false alarms) — M5's
+scores any monitor against a known onset (detection latency + false alarms): M5's
 per-technique scorecard, exercised in tests with injected shifts. Verified live on the
 first real series: conformal refused at n=3 reference (correct), PH/CUSUM quiet on a
 within-variance interval (correct).
@@ -278,7 +278,7 @@ within-variance interval (correct).
 ### 3f. Ollama provider (run live 2026-07-22)
 
 Probe runs against any model an ollama server already serves. COMPLETE only (no stable
-full-vocab logprob API — MC control and P(True) stay on local-hf).
+full-vocab logprob API, so MC control and P(True) stay on local-hf).
 
 ```bash
 python -m gaige.cli probe run --probes probes/demo.jsonl --provider ollama \
@@ -292,14 +292,14 @@ version-shaped identity); no digest → `opaque`; mismatch → loud, never upgra
 roots tried: `$OLLAMA_MODELS`, `~/.ollama/models`, `/usr/share/ollama/.ollama/models`.
 
 Bench specifics: the ollama systemd service stores under `/usr/share/ollama` (mode 700,
-service user), so `verified` needed a read-only ACL — granted 2026-07-22 with
+service user), so `verified` needed a read-only ACL: granted 2026-07-22 with
 `setfacl -R -m u:<you>:rX /usr/share/ollama` (+ default ACL for new blobs); reverse with
 `setfacl -R -b /usr/share/ollama` if ever unwanted. Model LOADS still go through
-a VRAM-guard wrapper (headroom rules) — the provider only talks to a model an
+a VRAM-guard wrapper (headroom rules): the provider only talks to a model an
 operator already chose to serve. First live series: qwen2.5:7b-instruct, chain
 **verified**, 100% both vintages on the demo set, series `10c246457f8d`.
 
-### 3g. `gaige plan` — what can this machine run
+### 3g. `gaige plan`: what can this machine run
 
 ```bash
 python -m gaige.cli plan
@@ -307,10 +307,10 @@ python -m gaige.cli plan
 
 Prints the machine (CPUs/RAM/GPU free VRAM/served ollama models/llama-server presence) and
 a table of known configurations: fits-now verdict against measured floors, attestation
-level, and a measured runtime anchor NAMING its receipt. No quality column, deliberately —
+level, and a measured runtime anchor NAMING its receipt. No quality column, deliberately, because
 separation lives in receipts and does not transfer between configurations (the legend on
 every table says so; a test enforces it). Bench verdicts while the co-resident production scorer holds its
-VRAM: falcon-4bit fits, falcon-fp16 correctly "NO — needs 13.7 GB free, have ~11".
+VRAM: falcon-4bit fits, falcon-fp16 correctly gets a NO (needs 13.7 GB free VRAM with roughly 11 available).
 
 ### 3h. Author a probe set (built 2026-07-26)
 
@@ -323,14 +323,14 @@ python -m gaige.cli probe lint --probes probes/t0.jsonl
 `probe new` scaffolds the JSONL plus a sidecar manifest (`t0.manifest.json`) with the
 signed authoring decisions pre-filled: nem grading declaration, greedy temperature-0
 decoding block, and a control-linkage stanza (name + sha256 + logprob-argmax scoring) you
-must point at the frozen MMLU-subset control. The manifest is a sidecar deliberately —
+must point at the frozen MMLU-subset control. The manifest is a sidecar deliberately, so
 editing a declaration never moves the probe-file sha256 or the frozen vintage hashes.
 
 `probe lint` is the mechanical gate: errors for anything violating a signed decision
 (missing `authored`, a `source_date` not post-dating the cutoff, `authored` predating its
 source, unfilled EDIT-ME placeholders, ungradeable answers, a broken or unhashed control
 linkage), warnings for authoring advice (answers over 5 words, redundant aliases,
-duplicate prompts). A study set must lint clean — **`probe run` enforces it**: when a
+duplicate prompts). A study set must lint clean, and **`probe run` enforces it**: when a
 manifest sits beside the probe file, a set that fails lint refuses to run, and a run
 whose temperature contradicts the declared greedy block refuses with the remedy (change
 the declaration first, so the fork is visible in history). A manifest-less file (like
@@ -360,12 +360,12 @@ All four also run in CI on Linux and Windows across Python 3.10/3.12/3.13.
   cp1252 and the report contains an arrow. All report IO is explicit UTF-8 now, with a test.
 - **4-bit on CPU is impossible** (bitsandbytes has no CPU kernel). gaige refuses and tells you to
   use `--quant fp32` with a smaller model.
-- **A 7B model on CPU is ~20-36 s/sample** — about two hours for 200 samples. Use a small model.
+- **A 7B model on CPU is ~20-36 s/sample**: about two hours for 200 samples. Use a small model.
 - **A run that dies mid-way resumes.** Scores are flushed to disk per sample; continue with
-  `gaige run ... --resume reports/<dir>` (same corpus + instrument, or it refuses — resuming
+  `gaige run ... --resume reports/<dir>` (same corpus + instrument, or it refuses, because resuming
   across an instrument change would interleave two instruments into one report). Verified:
   SIGKILL at 185/300, resumed, bit-identical to the uninterrupted run.
-- **A co-resident production scorer can share the GPU.** When one is resident it has priority —
+- **A co-resident production scorer can share the GPU.** When one is resident it has priority:
   schedule heavy GPU work around its quiet windows.
 - **Corpus labels are trusted.** gaige validates the *shape* of a corpus, never the correctness of
   its labels. Wrong labels produce confidently wrong thresholds; the sha256 at least makes it

@@ -1,7 +1,7 @@
 # Security
 
 gaige is pre-1.0 and single-maintainer. This document says what it defends against, what it
-does not, and how to report a problem — because a tool that asks you to trust its numbers owes
+does not, and how to report a problem, because a tool that asks you to trust its numbers owes
 you an explicit account of its own trust boundaries.
 
 ## Reporting
@@ -17,20 +17,20 @@ limitation is stated rather than papered over.
 | Corpus JSONL (`--corpus`) | untrusted | Schema-validated per row; rows lacking `text` + a `human`/`ai` label are rejected with the line number |
 | `scores.csv` (`analyze --scores`) | untrusted | Required columns enforced; labels constrained to `human`/`ai`; non-numeric scores raise |
 | Report directory (`--report`) | untrusted | JSON parsed; a directory without `scores.csv` is rejected as not-a-report |
-| Document to score (`score --file`/stdin) | untrusted | Read as UTF-8 text, tokenized, scored. Never persisted — see below |
-| **Model weights** (HuggingFace `--model`) | **TRUSTED — see below** | Loaded via `transformers` without `trust_remote_code` |
+| Document to score (`score --file`/stdin) | untrusted | Read as UTF-8 text, tokenized, scored. Never persisted: see below |
+| **Model weights** (HuggingFace `--model`) | **TRUSTED: see below** | Loaded via `transformers` without `trust_remote_code` |
 
 ## The privacy property
 
 `gaige score` is designed so that **the text you score is never written to disk**: no logging,
 no cache, no telemetry, no network egress of document content. The scored document exists in
 memory for the duration of the call and nowhere else. This matters because the realistic user
-is someone checking their own writing, or an institution checking a student's — the content is
+is someone checking their own writing, or an institution checking a student's: the content is
 sensitive by construction.
 
 This is a **claim that should be verified, not believed.** gaige emits no network calls during
 scoring and writes only to paths you pass explicitly. If you find any path by which scored text
-is persisted or transmitted, that is a security bug — report it.
+is persisted or transmitted, that is a security bug, so report it.
 
 ## What gaige does NOT defend against
 
@@ -53,7 +53,7 @@ self-refuting:
 
 ## Dependencies
 
-Core runtime is deliberately small — `numpy` and `requests`. The GPU stack (`torch`,
+Core runtime is deliberately small: `numpy` and `requests`. The GPU stack (`torch`,
 `transformers`, `bitsandbytes`, `accelerate`) is an optional extra, imported lazily, so a
 machine without CUDA runs the calibration and reporting layer with a much smaller surface.
 
