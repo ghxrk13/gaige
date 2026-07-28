@@ -4,7 +4,7 @@ gaige is dual-licensed.
 
 ## 1. AGPL-3.0 (the default, free)
 
-Use, study, modify, and redistribute it under the GNU Affero General Public License v3 — see
+Use, study, modify, and redistribute it under the GNU Affero General Public License v3: see
 `LICENSE`. In practice this costs you nothing if you are:
 
 - running it on your own corpus and reading the reports,
@@ -20,9 +20,9 @@ parties would defeat the point.
 
 ## 2. Commercial license (paid)
 
-If you want to build on gaige *without* the AGPL's source-publication obligation — embedding
+If you want to build on gaige *without* the AGPL's source-publication obligation (embedding
 it in a closed product, offering a modified version as a hosted service, or shipping it inside
-proprietary software — a commercial license removes that obligation.
+proprietary software), a commercial license removes that obligation.
 
 Typical buyers: detection vendors wanting a calibration layer, integrity/assessment platforms
 embedding reports, consultancies running it as a service for clients.
@@ -31,7 +31,7 @@ Contact: open a GitHub issue titled "commercial license" and we'll take it from 
 
 ## Why dual-licensed
 
-The audit has to be public for the audit to mean anything — so the code stays open source
+The audit has to be public for the audit to mean anything, so the code stays open source
 (OSI-approved, genuinely free for the people who need it most, including anyone contesting a
 detector's verdict about them). But an open license shouldn't mean a well-funded vendor can
 wrap it, sell it, and publish nothing. AGPL keeps that door closed; the commercial license is

@@ -2,15 +2,15 @@
 
 ## Getting help
 
-- **Bugs and behavior questions** — open a [GitHub issue](https://github.com/ghxrk13/gaige/issues).
-- **Calibration questions, results discussion** — GitHub Discussions.
-- **Security reports** — see `SECURITY.md`; never a public issue.
-- **Commercial licensing and engagements** — see `COMMERCIAL.md`, or ghxrk13@proton.me.
+- **Bugs and behavior questions**: open a [GitHub issue](https://github.com/ghxrk13/gaige/issues).
+- **Calibration questions, results discussion**: GitHub Discussions.
+- **Security reports**: see `SECURITY.md`; never a public issue.
+- **Commercial licensing and engagements**: see `COMMERCIAL.md`, or ghxrk13@proton.me.
 
 ## What makes a report answerable
 
 gaige's own habit applies in reverse: a number without its instrument cannot be debugged.
-The fastest route to a fix is the receipt —
+The fastest route to a fix is the receipt:
 
 1. the instrument fingerprint from the run (`env.json`, or `gaige --version` plus OS and
    Python version),

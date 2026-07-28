@@ -2,7 +2,7 @@
 
 gaige implements published detection criteria. The algorithms are described in the papers
 below; the implementations in this repository were written from those descriptions rather
-than copied, but attribution is owed either way — and a tool about provenance should model
+than copied, but attribution is owed either way, and a tool about provenance should model
 good provenance.
 
 ## Fast-DetectGPT (analytic sampling discrepancy)
