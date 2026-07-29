@@ -27,6 +27,8 @@ import logging
 import platform
 from dataclasses import dataclass, field
 
+from . import base
+
 log = logging.getLogger("gaige.detector")
 
 # Quantizations that only exist on CUDA. bitsandbytes 4-bit has no CPU kernel path.
@@ -192,7 +194,8 @@ class FastDetectGPT:
 
         before = torch.cuda.memory_allocated() if device == "cuda" else 0
         try:
-            self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+            with base.mute_torch_dtype_deprecation():
+                self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
         except Exception as e:
             if device == "cuda" and isinstance(e, torch.OutOfMemoryError):
                 raise RuntimeError(
