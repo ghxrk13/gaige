@@ -50,6 +50,12 @@ gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt
 gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
 ```
 
+On a CPU machine the quickstart saturates: the auto-selected gpt2-large separates this
+small corpus completely (AUROC 1.0000 on hc3-mini), which demonstrates the pipeline, not
+the difficulty of detection. For a calibrated example with honest error bars, see the
+published GPU receipt: AUROC 0.9720 (95% CI 0.9458-0.9938), Fast-DetectGPT on falcon-7b,
+4bit, hc3-mini(n=100,seed=17).
+
 On a CPU-only machine the `[gpu]` extra pulls the multi-gigabyte CUDA build of torch by
 default. Install the small CPU build first and the extra will leave it alone:
 
