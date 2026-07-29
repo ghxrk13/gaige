@@ -1,0 +1,188 @@
+{
+ "schema": "gaige-receipt-export/1",
+ "exported_by": "gaige 0.0.2",
+ "receipt": {
+  "id": "export-clean",
+  "generated_utc": "2026-01-01T00:00:00+00:00",
+  "gaige_version": "0.0.2"
+ },
+ "instrument": {
+  "host": {
+   "os": "Linux",
+   "arch": "x86_64",
+   "device": "cuda"
+  },
+  "detector": {
+   "detector": "binoculars",
+   "paper": "Hans et al., Binoculars (2024), arXiv:2401.12070; released-implementation construction",
+   "model_id": "example/observer-7b + example/performer-7b",
+   "observer_id": "example/observer-7b",
+   "performer_id": "example/performer-7b",
+   "quant_requested": "4bit",
+   "quant_verified": {
+    "linear4bit_modules": 256,
+    "resident_gb": 8.07,
+    "per_model": {
+     "observer": {
+      "linear4bit_modules": 128,
+      "resident_gb": 4.04
+     },
+     "performer": {
+      "linear4bit_modules": 128,
+      "resident_gb": 4.03
+     }
+    }
+   },
+   "max_tokens": 1024,
+   "versions": {
+    "torch": "0.0.0+test",
+    "transformers": "0.0.0",
+    "cuda": "0.0",
+    "python": "3.12.0",
+    "bitsandbytes": "0.0.0"
+   },
+   "device": "cuda",
+   "device_requested": "cuda",
+   "device_fallback": false,
+   "model_auto_selected": false,
+   "compute": {
+    "name": "TESTGPU Laptop GPU"
+   },
+   "score_semantics": "NEGATED Binoculars ratio -(ppl/x_ppl); higher = more AI-like; RAW criterion (uncalibrated by design)"
+  }
+ },
+ "corpus": {
+  "name": "testcorp-mini(n=5,seed=1)",
+  "sha256": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "counts": {
+   "human": 5,
+   "ai": 5
+  },
+  "meta": {
+   "source": "TestCorp via HF hub",
+   "url": "https://huggingface.co/datasets/example/testcorp/resolve/main/all.jsonl",
+   "raw_sha256": "cafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00d",
+   "filters": {
+    "min_words": 50,
+    "max_words": 300
+   },
+   "n_per_class": 5,
+   "seed": 1,
+   "note": "synthetic fixture corpus; carries no claim about any real detector or text"
+  }
+ },
+ "metrics": {
+  "auroc": 0.9123,
+  "auroc_ci": [
+   0.8712,
+   0.9456
+  ],
+  "eer": 0.08,
+  "eer_threshold": 1.4321,
+  "n_boot": 1000
+ },
+ "thresholds": [
+  {
+   "target_fpr": 0.01,
+   "threshold": 2.1111,
+   "achieved_fpr": 0.0,
+   "achieved_tpr": 0.8,
+   "tpr_ci": [
+    0.6,
+    1.0
+   ]
+  },
+  {
+   "target_fpr": 0.05,
+   "threshold": 1.8222,
+   "achieved_fpr": 0.04,
+   "achieved_tpr": 0.9,
+   "tpr_ci": [
+    0.7,
+    1.0
+   ]
+  }
+ ],
+ "conformal": [
+  {
+   "alpha": 0.05,
+   "threshold": 1.77,
+   "n_calibration": 5,
+   "order_statistic": 5,
+   "conditional_fpr_mean": 0.028,
+   "conditional_fpr_sd": 0.021,
+   "guarantee": "P(human flagged) <= 0.05 marginally over calibration draws (split conformal, arXiv:2505.05084)",
+   "tpr": 0.9
+  },
+  {
+   "alpha": 0.01,
+   "unavailable": "alpha=0.01 needs >= 99 human calibration samples, got 5. A tighter guarantee than your data supports is not a guarantee."
+  }
+ ],
+ "subgroups": {
+  "min_subgroup": 3,
+  "by_threshold": [
+   {
+    "target_fpr": 0.01,
+    "threshold": 2.1111,
+    "strata": {
+     "length_bucket": {
+      "50-100w": {
+       "n_human": 3,
+       "fpr": 0.0,
+       "fpr_ci": [
+        0.0,
+        0.33
+       ],
+       "n_ai": 3,
+       "tpr": 0.83,
+       "tpr_ci": [
+        0.5,
+        1.0
+       ]
+      },
+      "100-250w": {
+       "n_human": 2,
+       "fpr": null,
+       "fpr_ci": null,
+       "rate_withheld": true,
+       "n_ai": 2,
+       "tpr": null,
+       "tpr_ci": null
+      }
+     }
+    },
+    "max_fpr_disparity": {
+     "length_bucket": null
+    }
+   }
+  ]
+ },
+ "base_rate": {
+  "volume": 75000,
+  "volume_note": "default is Vanderbilt's published 75,000 submissions/year",
+  "at": [
+   {
+    "target_fpr": 0.01,
+    "expected_false_positives": 750.0,
+    "ppv_at_prevalence": [
+     {
+      "prevalence": 0.01,
+      "ppv": 0.45
+     },
+     {
+      "prevalence": 0.1,
+      "ppv": 0.9
+     },
+     {
+      "prevalence": 0.5,
+      "ppv": 0.99
+     }
+    ]
+   }
+  ]
+ },
+ "reproduce": {
+  "run": "gaige run --corpus testcorp-mini --n 5 --seed 1 --detector binoculars --observer example/observer-7b --performer example/performer-7b --quant 4bit --device cuda --max-tokens 1024"
+ }
+}

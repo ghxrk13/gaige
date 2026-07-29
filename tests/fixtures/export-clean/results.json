@@ -1,0 +1,112 @@
+{
+ "gaige_version": "0.0.2",
+ "auroc": 0.9123,
+ "auroc_ci": [
+  0.8712,
+  0.9456
+ ],
+ "eer": 0.08,
+ "eer_threshold": 1.4321,
+ "thresholds": [
+  {
+   "target_fpr": 0.01,
+   "threshold": 2.1111,
+   "achieved_fpr": 0.0,
+   "achieved_tpr": 0.8,
+   "tpr_ci": [
+    0.6,
+    1.0
+   ]
+  },
+  {
+   "target_fpr": 0.05,
+   "threshold": 1.8222,
+   "achieved_fpr": 0.04,
+   "achieved_tpr": 0.9,
+   "tpr_ci": [
+    0.7,
+    1.0
+   ]
+  }
+ ],
+ "conformal": [
+  {
+   "alpha": 0.05,
+   "threshold": 1.77,
+   "n_calibration": 5,
+   "order_statistic": 5,
+   "conditional_fpr_mean": 0.028,
+   "conditional_fpr_sd": 0.021,
+   "guarantee": "P(human flagged) <= 0.05 marginally over calibration draws (split conformal, arXiv:2505.05084)",
+   "tpr": 0.9
+  },
+  {
+   "alpha": 0.01,
+   "unavailable": "alpha=0.01 needs >= 99 human calibration samples, got 5. A tighter guarantee than your data supports is not a guarantee."
+  }
+ ],
+ "subgroups": {
+  "min_subgroup": 3,
+  "by_threshold": [
+   {
+    "target_fpr": 0.01,
+    "threshold": 2.1111,
+    "strata": {
+     "length_bucket": {
+      "50-100w": {
+       "n_human": 3,
+       "fpr": 0.0,
+       "fpr_ci": [
+        0.0,
+        0.33
+       ],
+       "n_ai": 3,
+       "tpr": 0.83,
+       "tpr_ci": [
+        0.5,
+        1.0
+       ]
+      },
+      "100-250w": {
+       "n_human": 2,
+       "fpr": null,
+       "fpr_ci": null,
+       "rate_withheld": true,
+       "n_ai": 2,
+       "tpr": null,
+       "tpr_ci": null
+      }
+     }
+    },
+    "max_fpr_disparity": {
+     "length_bucket": null
+    }
+   }
+  ]
+ },
+ "base_rate": {
+  "volume": 75000,
+  "volume_note": "default is Vanderbilt's published 75,000 submissions/year",
+  "at": [
+   {
+    "target_fpr": 0.01,
+    "expected_false_positives": 750.0,
+    "ppv_at_prevalence": [
+     {
+      "prevalence": 0.01,
+      "ppv": 0.45
+     },
+     {
+      "prevalence": 0.1,
+      "ppv": 0.9
+     },
+     {
+      "prevalence": 0.5,
+      "ppv": 0.99
+     }
+    ]
+   }
+  ]
+ },
+ "n_boot": 1000
+}

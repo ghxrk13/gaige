@@ -1,0 +1,24 @@
+{
+ "gaige_version": "0.0.1",
+ "auroc": 0.933,
+ "auroc_ci": [
+  0.87,
+  0.98
+ ],
+ "thresholds": [
+  {
+   "target_fpr": 0.01,
+   "threshold": 3.5,
+   "achieved_fpr": 0.0,
+   "achieved_tpr": 0.6,
+   "tpr_ci": [
+    0.2,
+    1.0
+   ]
+  }
+ ],
+ "subgroups": {
+  "unavailable": "n_words was not recorded with these scores (older report or bare scores.csv); re-score, or supply an n_words column, to get subgroup receipts"
+ },
+ "n_boot": 1000
+}
