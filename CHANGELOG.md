@@ -6,6 +6,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Measured numbers are quoted with the instrument that produced them, because a number without its
 instrument is not a result. Where a change altered what gaige *measures*, it says so explicitly.
 
+## [0.0.2] - 2026-07-29
+
+### Added
+
+- **`gaige export`: receipts as public site data.** Exports a report as one self-contained
+  JSON document (schema `gaige-receipt-export/1`) joining every statistic with the
+  instrument fingerprint that produced it and a stranger-runnable reproduce command, plus
+  a rebuilt `index.json` (schema `gaige-export-index/1`). Nothing is recomputed: values
+  are copied verbatim from results.json, so the analyze replay gate covers exports
+  transitively. Redaction is structural and fail-closed: an absolute path, an IP address,
+  or a URL off the public host allowlist refuses the whole export and names the offending
+  field, and the host block is projected down to os family, architecture, and device.
+  Reports without env.json refuse: INSTRUMENT UNKNOWN receipts are not exportable,
+  mechanically. Exports are deterministic (LF bytes, no export-time clock), the format is
+  golden-pinned, and the golden is held to the same blocked-claims scan as every shipped
+  document. Tests: 182 → 200.
+
+### Fixed
+
+- csv field-size probe no longer overflows the Windows C long (found by the first public
+  CI run; `corpus_raid` on Windows).
+- `tools/check_consistency.py` reads pyproject on py3.10 via the tomli fallback (same CI
+  run).
+
+### Changed
+
+- The upstream `torch_dtype` rename notice from newer transformers stays out of a
+  stranger's terminal during model load (found by the 0.0.1 post-publish pass). The mute
+  is message-scoped and context-scoped on both channels the notice can arrive on; the
+  load path itself is untouched on every supported version, verified by replaying a 0.0.1
+  reference receipt bit-identically under 0.0.2.
+- README quickstart now says that CPU saturates hc3-mini (auto-selected gpt2-large,
+  AUROC 1.0000) and points at the calibrated GPU receipt (AUROC 0.9720, Fast-DetectGPT on
+  falcon-7b, 4bit, hc3-mini(n=100,seed=17)) as the honest example.
+
 ## [0.0.1] - 2026-07-26 (release-ready cut; PyPI publish rides the public flip)
 
 The first real release, cut and verified 2026-07-26. PyPI still holds the `0.0.0`
