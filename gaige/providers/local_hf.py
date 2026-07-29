@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..detectors.base import mute_torch_dtype_deprecation
 from .base import CAP_COMPLETE, CAP_OPTION_LOGPROBS, VERIFIED, Decoding
 
 
@@ -51,7 +52,8 @@ class LocalHF:
         if self._tok.pad_token_id is None:
             self._tok.pad_token = self._tok.eos_token
         kwargs = {"torch_dtype": torch.float16 if self.dtype == "fp16" else torch.float32}
-        self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+        with mute_torch_dtype_deprecation():
+            self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
         self._model.to(self._device)
         self._model.eval()
         self._n_params = sum(p.numel() for p in self._model.parameters())

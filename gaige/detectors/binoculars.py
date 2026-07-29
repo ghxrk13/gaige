@@ -31,6 +31,7 @@ import logging
 import platform
 from dataclasses import dataclass, field
 
+from . import base
 from .fast_detect_gpt import CUDA_ONLY_QUANT, _available_ram_gb
 
 log = logging.getLogger("gaige.detector")
@@ -115,7 +116,8 @@ class Binoculars:
         else:
             kwargs["torch_dtype"] = torch.float32
         before = torch.cuda.memory_allocated() if device == "cuda" else 0
-        model = AutoModelForCausalLM.from_pretrained(model_id, **kwargs)
+        with base.mute_torch_dtype_deprecation():
+            model = AutoModelForCausalLM.from_pretrained(model_id, **kwargs)
         if device == "cpu":
             model.to("cpu")
         model.eval()
