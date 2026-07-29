@@ -23,7 +23,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Every prose document that ships with the repo.
+# Every prose document that ships with the repo. The golden export fixture is included
+# because exported receipt JSON is shipped prose the moment it reaches the site.
 SHIPPED_DOCS = [
     "README.md",
     "CHANGELOG.md",
@@ -34,6 +35,7 @@ SHIPPED_DOCS = [
     "SUPPORT.md",
     "TRADEMARK.md",
     "COMMERCIAL.md",
+    "tests/fixtures/export-golden/receipts/export-clean.json",
 ]
 
 # Refuted or unusably-sourced claims (fold of record: detection-research-2026-07-21.md,

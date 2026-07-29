@@ -8,6 +8,7 @@ gaige run     --corpus hc3-mini --n 100 --detector fast-detect-gpt
 gaige run     --corpus path/to/labeled.jsonl ...
 gaige analyze --report reports/<ts>-<detector>/     # re-derive results, no GPU needed
 gaige analyze --scores path/to/scores.csv
+gaige export  --report reports/<ts>-<detector>/ --out site-data/   # public receipt JSON
 gaige score   --report reports/<ts>-<detector>/ --file draft.md
 gaige probe run --probes probes.jsonl --provider local-hf --model gpt2-large --cutoff 2024-06-01
 gaige providers
@@ -242,6 +243,17 @@ def cmd_analyze(args) -> int:
     )
     report = write_report(outdir, corpus, detector_meta, rows, results, reproduce)
     _print_receipt(report, results)
+    return 0
+
+
+def cmd_export(args) -> int:
+    """Export one receipt as public site data. No model, no GPU, nothing recomputed."""
+    from . import export as export_mod
+
+    s = export_mod.export_report(Path(args.report), Path(args.out), force=args.force)
+    print(f"[export] {'wrote' if s['wrote'] else 'unchanged'} {s['receipt_path']}")
+    print(f"[export] index rebuilt: {s['index_path']}")
+    print(f"[export] {s['id']}: {s['detector']} on {s['corpus']}, auroc {s['auroc']:.4f}")
     return 0
 
 
@@ -667,6 +679,27 @@ def main(argv=None) -> int:
     )
     a.set_defaults(fn=cmd_analyze)
 
+    ex = sub.add_parser(
+        "export",
+        help="export a receipt as public site data: fingerprint, intervals, and a reproduce "
+        "command beside every number, redaction-checked (fail-closed)",
+    )
+    ex.add_argument(
+        "--report", required=True, help="an existing reports/<ts>-<detector>/ directory"
+    )
+    ex.add_argument(
+        "--out",
+        required=True,
+        help="export root; writes <out>/receipts/<id>.json and rebuilds <out>/index.json. "
+        "No default: this output is destined for a public surface, so say where.",
+    )
+    ex.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite an existing export whose bytes differ (identical bytes never need it)",
+    )
+    ex.set_defaults(fn=cmd_export)
+
     c = sub.add_parser("corpora", help="list built-in corpora")
     c.set_defaults(fn=cmd_corpora)
 
@@ -862,7 +895,7 @@ def main(argv=None) -> int:
             print(
                 f"error: scoring needs the GPU extra ({e.name} is not installed).\n"
                 'Install it with:  pip install "gaige[gpu]"\n'
-                "Analysis commands (analyze, plan, corpora, series) run without it.",
+                "Analysis commands (analyze, export, plan, corpora, series) run without it.",
                 file=sys.stderr,
             )
             return 2

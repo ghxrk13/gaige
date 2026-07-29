@@ -151,6 +151,20 @@ change `--n-boot`, regenerate a report, or do analysis on a machine with no GPU.
 Analysing a bare `scores.csv` with no `env.json` produces a report that says **INSTRUMENT UNKNOWN**,
 deliberately, because those thresholds attest to nothing.
 
+### 2d. Export a receipt as public site data (no GPU, any machine)
+
+```bash
+python -m gaige.cli export --report reports/<ts>-<detector>/ --out site-data/
+```
+
+Writes `site-data/receipts/<id>.json` (schema `gaige-receipt-export/1`) and rebuilds
+`site-data/index.json`: the same numbers, joined with the instrument fingerprint and the
+reproduce command, in one self-contained public JSON document. Nothing is recomputed; every
+statistic is copied verbatim from `results.json`. Redaction is fail-closed: an absolute path,
+an IP address, or a URL off the public allowlist refuses the whole export and names the field.
+Reports without `env.json` refuse: INSTRUMENT UNKNOWN receipts are not exportable. Site
+placement is a site-repo concern; this command only produces the artifact.
+
 ## 3. Workflow B: longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
 
 ### 3a. Run a probe set (built 2026-07-22)

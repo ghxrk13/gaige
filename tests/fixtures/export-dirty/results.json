@@ -1,0 +1,10 @@
+{
+ "gaige_version": "0.0.2",
+ "auroc": 0.9,
+ "auroc_ci": [
+  0.8,
+  1.0
+ ],
+ "thresholds": [],
+ "n_boot": 1000
+}

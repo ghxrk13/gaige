@@ -1,0 +1,16 @@
+{
+ "schema": "gaige-export-index/1",
+ "exported_by": "gaige 0.0.2",
+ "receipts": [
+  {
+   "id": "export-clean",
+   "path": "receipts/export-clean.json",
+   "detector": "binoculars",
+   "corpus": "testcorp-mini(n=5,seed=1)",
+   "corpus_sha256": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+   "auroc": 0.9123,
+   "gaige_version": "0.0.2",
+   "generated_utc": "2026-01-01T00:00:00+00:00"
+  }
+ ]
+}
