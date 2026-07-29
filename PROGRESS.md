@@ -1,5 +1,17 @@
 # PROGRESS: gaige (yoto pattern)
 
+## 2026-07-29: 0.0.2, the quality release
+- `gaige export` ships: receipts as public site data (schema gaige-receipt-export/1 plus
+  a rebuilt index), joined with the full instrument fingerprint and a stranger-runnable
+  reproduce command; redaction fail-closed; INSTRUMENT UNKNOWN refused. Tests 182 → 200.
+- Zero scoring drift, proven byte-for-byte: 0.0.1-tagged code and 0.0.2 produce identical
+  analyses of the reference receipts (only the version stamp differs), and the Windows
+  py3.12 arm agrees value-for-value.
+- Both banked 0.0.1 stranger findings folded: the README saturation note, and the
+  torch_dtype rename notice muted at load (message-scoped; load path untouched).
+- The flip-day term sweep had altered one word of AGPL boilerplate in the public LICENSE;
+  restored verbatim, because license texts are verbatim by their own terms.
+
 ## 2026-07-27: 0.0.1 is PUBLIC, and it survived both stranger passes
 - PyPI 0.0.1 live; wheel sha `00db4316…` fetched from the outside matches the shipping
   hash byte-for-byte. Repo public, CI green, tag v0.0.1 = f04d463, gaige.dev serving.
