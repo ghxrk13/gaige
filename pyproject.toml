@@ -42,6 +42,9 @@ classifiers = [
 # transformers pinned <5: 5.14.1 measured (2026-07-21) silently ignoring 4-bit config
 # (eetq misroute -> fp16 load). See PROGRESS.md incident receipt.
 gpu = ["torch", "transformers>=4.45,<5", "bitsandbytes", "accelerate"]
+# Everything `gaige verify` can use: the C2PA SDK plus the imaging stack for the vendored
+# dwtDct codec. Each arm also degrades honestly (UNAVAILABLE + its own remedy) if absent.
+verify = ["c2pa-python", "PyWavelets", "opencv-python-headless"]
 
 [project.urls]
 Homepage = "https://gaige.dev"
@@ -68,4 +71,8 @@ line-length = 100
 target-version = "py310"
 
 [tool.ruff.lint]
-extend-select = ["I"]  # import sorting
+# Explicit select, not extend-select: ruff 0.16.0 (2026-07) expanded its default rule set,
+# which silently widened this gate 77-errors-wide. These five are ruff's long-standing
+# defaults plus import sorting — the selection CI has actually been enforcing — now pinned
+# so the lint instrument cannot drift with the linter's defaults again.
+select = ["E4", "E7", "E9", "F", "I"]
