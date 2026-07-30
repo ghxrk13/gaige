@@ -36,6 +36,10 @@ shifts scores, so gaige refuses to emit numbers from a load it can't prove.
   pipeline? Distinguishing those two is the difference between a finding and an artifact, and
   it is the harder question. gaige is built to answer it with evidence rather than assertion.
 
+And since 0.0.3, a third surface on the same honesty rules: **`gaige verify`**, a provenance
+evidence sweep (C2PA Content Credentials, image watermarks, keyed text schemes) that emits
+evidence statuses, never a score, and states in every result what a negative from it means.
+
 Scoring needs a model and ideally a GPU. **Analysis does not**: `gaige analyze` re-derives
 thresholds and reports from scores that already exist, so calibration runs on a laptop, or a
 CPU-only machine, or an isolated environment with no accelerator at all.
@@ -48,6 +52,8 @@ pip install "gaige[gpu]"          # scoring too: torch/transformers/bitsandbytes
 gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt
 # → reports/<ts>/report.md + scores.csv + roc.json + env.json
 gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
+pip install "gaige[verify]"             # provenance evidence: c2pa-python + PyWavelets + opencv
+gaige verify picture.png                # evidence statuses (FOUND/ABSENT/INCONCLUSIVE/NEEDS_KEYS), never a score
 ```
 
 On a CPU machine the quickstart saturates: the auto-selected gpt2-large separates this
@@ -169,27 +175,60 @@ the exact conditional Beta dispersion printed beside it) · **subgroup-stratifie
 (length buckets always, metadata axes when the corpus carries them; every rate with a bootstrap
 interval, rates on fewer than 20 samples withheld: counts speak instead) · **base-rate
 arithmetic in every report** (FPR × your volume = wrongly flagged per year, plus PPV at assumed
-prevalences: the calculation Vanderbilt published when it disabled its detector) · **Binoculars as detector #2** (released-implementation construction, both models quant-verified on the receipt; the paper's global thresholds measured at 16%/3% FPR on the reference corpus: calibrate in-domain, with receipts) · **quantization A/B receipts** (measured: 4-bit moves the 1%-FPR threshold ~10% where fp32-vs-fp16 agree to four decimals, so quantization is an instrument parameter) · the probe runner, run registry, P(True)/ECE, and drift monitors of the longitudinal apparatus (see RUNBOOK Workflow B) · providers local-hf / llama.cpp / **ollama** (attestation earned per artifact: GGUF sha256; ollama's manifest+weights chain re-hashed by gaige itself) · **`gaige plan`** (what this machine can run, at measured cost, with attestation, but no quality column, deliberately: separation lives in receipts).
+prevalences: the calculation Vanderbilt published when it disabled its detector) · **Binoculars as detector #2** (released-implementation construction, both models quant-verified on the receipt; the paper's global thresholds measured at 16%/3% FPR on the reference corpus: calibrate in-domain, with receipts) · **quantization A/B receipts** (measured: 4-bit moves the 1%-FPR threshold ~10% where fp32-vs-fp16 agree to four decimals, so quantization is an instrument parameter) · the probe runner, run registry, P(True)/ECE, and drift monitors of the longitudinal apparatus (see [RUNBOOK](https://github.com/ghxrk13/gaige/blob/main/RUNBOOK.md) Workflow B) · providers local-hf / llama.cpp / **ollama** (attestation earned per artifact: GGUF sha256; ollama's manifest+weights chain re-hashed by gaige itself) · **`gaige plan`** (what this machine can run, at measured cost, with attestation, but no quality column, deliberately: separation lives in receipts).
 
-Next (research-ranked, see PROGRESS.md): per-subgroup conformal thresholds (Mondrian; the
-guarantee-backed version of group-adaptive thresholding, needs larger calibration sets) ·
-adversarial degradation panels · TH-Bench corpus adapter (the RAID adapter landed:
-`gaige corpus prepare-raid`) · watermark-verifier adapter ·
-drift canaries (does your instrument still measure what it measured last term?).
+v0.0.2 (the quality release): **`gaige export`** — a report's results and environment joined
+into one public receipt document (schema `gaige-receipt-export/1`, plus a rebuilt index), with
+fail-closed structural redaction: absolute paths, IPs, and non-allowlisted URL hosts refuse
+and name the offending field, because a receipt destined for a public surface must not leak
+the bench it was made on. Reports without an instrument fingerprint are refused outright: a
+public number without its instrument is what receipts exist to prevent · zero scoring drift
+proven byte-for-byte: 0.0.1-tagged code and 0.0.2 produce identical analyses of the reference
+receipts, only the version stamp differs.
+
+v0.0.3 (the provenance release): **`gaige verify`** — C2PA Content Credentials (absence is a
+typed signal: only ManifestNotFound reads ABSENT, a validation failure is never "no
+manifest"), the publicly checkable dwtDct image watermark behind a **per-image carrier
+self-test** (a negative reads ABSENT only when a probe payload embedded into that same image
+survives a round trip, proving the carrier could have held the mark; otherwise INCONCLUSIVE),
+and keyed text schemes reported honestly as NEEDS_KEYS. The overclaiming result cannot be
+constructed; the type system refuses it. The dwtDct codec is vendored (upstream imports torch
+at package-import time for an unrelated scheme), bit-format cross-validated against the real
+library in both directions, and pinned by a real-encoder golden fixture in CI ·
+**measured per-instrument memory floors**: the floor `gaige run` enforces and the needs
+`gaige plan` prints are the same single-sourced numbers, with `--min-free-gb` as the
+deliberate escape hatch, named in both refusal messages · "what the aggregate hides"
+(`docs/`): TPR@1%FPR 86.0% on the reference corpus, 61.5% aggregate on a harder RAID slice,
+and greedy 87.6% vs sampled 39.7% inside that aggregate.
+
+Full history: [CHANGELOG](https://github.com/ghxrk13/gaige/blob/main/CHANGELOG.md).
+
+Next (research-ranked, see [PROGRESS.md](https://github.com/ghxrk13/gaige/blob/main/PROGRESS.md)):
+SynthID-Text watermark receipts (detection is per-configuration and Google delegates the two
+thresholds to deployers — calibration homework, which is this tool's home turf) ·
+verify-receipt fields for revocation and trust-list state, with trust-list changes as a drift
+event class · C2PA-in-text reporting (spec 2.3 embeds manifests in unstructured text) ·
+per-subgroup conformal thresholds (Mondrian; the guarantee-backed version of group-adaptive
+thresholding, needs larger calibration sets) · adversarial degradation panels · TH-Bench
+corpus adapter (the RAID adapter landed: `gaige corpus prepare-raid`) · drift canaries (does
+your instrument still measure what it measured last term?).
 
 ## Licensing and the name
 
-**Code: AGPL-3.0** (`LICENSE`). Free to use, study, modify, and share, including inside an
-institution, in research, and in an appeal against a detector's verdict. If you offer a
-*modified* version to others as a network service, publish your modifications. A commercial
-license removes that obligation: see `COMMERCIAL.md`.
+**Code: AGPL-3.0** ([LICENSE](https://github.com/ghxrk13/gaige/blob/main/LICENSE)). Free to
+use, study, modify, and share, including inside an institution, in research, and in an appeal
+against a detector's verdict. If you offer a *modified* version to others as a network
+service, publish your modifications. A commercial license removes that obligation: see
+[COMMERCIAL.md](https://github.com/ghxrk13/gaige/blob/main/COMMERCIAL.md).
 
 **Name: not licensed.** No open-source license grants trademark rights. You may fork freely,
-but under a different name. See `TRADEMARK.md`; the standards there exist so that "a gaige report"
-keeps meaning something.
+but under a different name. See
+[TRADEMARK.md](https://github.com/ghxrk13/gaige/blob/main/TRADEMARK.md); the standards there
+exist so that "a gaige report" keeps meaning something.
 
-Maintainership is deliberately closed (see `CONTRIBUTING.md`), but issues and receipt-backed
-reproductions very welcome; pull requests not accepted at this time.
+Maintainership is deliberately closed (see
+[CONTRIBUTING.md](https://github.com/ghxrk13/gaige/blob/main/CONTRIBUTING.md)), but issues and
+receipt-backed reproductions very welcome; pull requests not accepted at this time.
 
 ## Fuel
 
