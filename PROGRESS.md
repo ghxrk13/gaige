@@ -1,5 +1,22 @@
 # PROGRESS: gaige (yoto pattern)
 
+## 2026-07-30: 0.0.3, the provenance release
+- `gaige verify` ships: provenance evidence statuses, never a score. C2PA absence is a
+  typed signal (only ManifestNotFound reads ABSENT; a validation failure can never read
+  "no manifest"), a watermark negative must earn ABSENT through a per-image carrier
+  self-test (the probe payload round-trips, or the answer is INCONCLUSIVE), and keyed
+  text schemes report NEEDS_KEYS instead of pretending. The overclaiming result is
+  unconstructible by type. Tests 200 → 241.
+- The dwtDct codec is vendored with MIT attribution: upstream imports torch at package
+  scope for an unrelated scheme, so its torch-free path is unreachable in practice.
+  Bit-format cross-validated against the real encoder in all six directions; a
+  real-encoder golden fixture pins ecosystem compatibility, with proven teeth.
+- Measured per-instrument memory floors, single-sourced between `gaige plan` and
+  `gaige run`; `--min-free-gb` is the named escape hatch in both refusal messages.
+- Live arms on real fixtures: a locally signed C2PA manifest reads Valid with the
+  generative source declared, and a watermark written by the real ecosystem encoder is
+  recovered from disk by the vendored codec.
+
 ## 2026-07-29: 0.0.2, the quality release
 - `gaige export` ships: receipts as public site data (schema gaige-receipt-export/1 plus
   a rebuilt index), joined with the full instrument fingerprint and a stranger-runnable
