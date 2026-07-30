@@ -64,6 +64,7 @@ LICENSE_NOTE = (
     "RAID is distributed by its authors on the Hugging Face Hub under their terms; "
     "gaige fetches rows at preparation time and redistributes none of it."
 )
+DATA_LICENSE = "mit (RAID dataset card, verified 2026-07-30)"
 
 PAGE = 100  # datasets-server maximum rows per request
 MAX_FETCH_TRIES = 4
@@ -353,6 +354,7 @@ def prepare_raid_slice(
             "retrieved_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "citation": CITATION,
             "license": LICENSE_NOTE,
+            "data_license": DATA_LICENSE,
             "note": (
                 f"RAID slice ({sel}, seed {seed}): thresholds measured here describe "
                 "THIS slice's generators/domains/attacks, not RAID, and not deployment."

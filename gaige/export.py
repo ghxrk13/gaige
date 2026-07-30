@@ -134,6 +134,11 @@ def build_export(report_dir: Path) -> dict:
         )
     results = json.loads(results_path.read_text(encoding="utf-8"))
     env = json.loads(env_path.read_text(encoding="utf-8"))
+    if results.get("kind") == "admit":
+        raise NotAReport(
+            f"{report_dir}: admission receipts are not exportable yet; the "
+            "gaige-admit-export/1 document type is planned for a future release"
+        )
     if "auroc" not in results:
         raise NotAReport(
             f"{report_dir}: results.json carries no calibration statistics; only "
