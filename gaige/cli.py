@@ -15,6 +15,7 @@ gaige providers
 gaige test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
 gaige corpora
 gaige corpus prepare-raid --generators gpt4,mistral-chat --domains abstracts,reddit
+gaige verify photo.png                              # provenance evidence sweep, no model
 """
 
 from __future__ import annotations
@@ -63,6 +64,7 @@ def _build_detector(args):
             quant=quant,
             max_tokens=args.max_tokens,
             device=args.device,
+            min_free_gb=getattr(args, "min_free_gb", None),
             model_auto_selected=auto,
         )
     if args.detector == "binoculars":
@@ -74,6 +76,7 @@ def _build_detector(args):
             quant=args.quant,
             max_tokens=args.max_tokens,
             device=args.device,
+            min_free_gb=getattr(args, "min_free_gb", None),
         )
     raise SystemExit(f"unknown detector: {args.detector}")
 
@@ -602,6 +605,24 @@ def cmd_score(args) -> int:
     return 0
 
 
+def cmd_verify(args) -> int:
+    import json as _json
+
+    from . import provenance
+
+    if args.text is not None:
+        sweep = provenance.sweep_text(args.text)
+    elif args.path:
+        try:
+            sweep = provenance.sweep_file(args.path)
+        except FileNotFoundError as e:
+            raise SystemExit(str(e)) from None
+    else:
+        raise SystemExit("give a file path to sweep, or --text for keyed text schemes")
+    print(_json.dumps(sweep, indent=1) if args.json else provenance.render(sweep))
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="gaige", description=__doc__)
     p.add_argument("--version", action="version", version=f"gaige {__version__}")
@@ -642,6 +663,14 @@ def main(argv=None) -> int:
         help="auto prefers CUDA and falls back to CPU, recording the fallback",
     )
     r.add_argument("--max-tokens", type=int, default=1024)
+    r.add_argument(
+        "--min-free-gb",
+        type=float,
+        default=None,
+        help="deliberately override the memory floor. Default: the measured floor for this "
+        "configuration where a receipt exists, else a conservative default (the floor "
+        "protects co-resident work; see gaige plan for the measured needs)",
+    )
     r.add_argument("--n-boot", type=int, default=1000)
     r.add_argument(
         "--harm-volume",
@@ -886,6 +915,20 @@ def main(argv=None) -> int:
     s.add_argument("--text")
     s.add_argument("--json", action="store_true")
     s.set_defaults(fn=cmd_score)
+
+    ve = sub.add_parser(
+        "verify",
+        help="provenance evidence sweep: C2PA credentials + image watermark carriers + "
+        "keyed text schemes — deterministic evidence with honest negatives, never an "
+        "AI-likeness score (no model, no GPU)",
+    )
+    ve.add_argument("path", nargs="?", help="file to sweep (image, or any C2PA-capable media)")
+    ve.add_argument(
+        "--text",
+        help="sweep text instead of a file; keyed schemes report NEEDS_KEYS honestly",
+    )
+    ve.add_argument("--json", action="store_true")
+    ve.set_defaults(fn=cmd_verify)
 
     args = p.parse_args(argv)
     try:

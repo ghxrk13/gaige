@@ -35,8 +35,11 @@ SHIPPED_DOCS = [
     "SUPPORT.md",
     "TRADEMARK.md",
     "COMMERCIAL.md",
+    "docs/what-the-aggregate-hides.md",
     "tests/fixtures/export-golden/receipts/export-clean.json",
 ]
+
+AGGREGATE_NOTE = "docs/what-the-aggregate-hides.md"
 
 # Refuted or unusably-sourced claims (fold of record: detection-research-2026-07-21.md,
 # corrected 2026-07-22). Each entry: (pattern, why it is blocked).
@@ -162,5 +165,62 @@ def test_positioning_first_party_numbers_name_their_instrument():
 def test_no_verdict_language_in_positioning():
     """gaige measures, gaige does not judge — the section may not parse gaige as a detector."""
     body = re.sub(r"<!--.*?-->", "", _positioning_section(), flags=re.DOTALL)
+    for pattern in [r"gaige\s+detects", r"gaige\s+catches", r"gaige\s+flags\b"]:
+        assert not re.search(pattern, body, re.IGNORECASE), f"detector framing: {pattern!r}"
+
+
+# --------------------------------------------------- the aggregates-hide note (docs/)
+# The note promises, in its own closing paragraph, to be held to report bar. These tests
+# are that bar.
+
+
+def _note_body() -> str:
+    return re.sub(r"<!--.*?-->", "", _read(AGGREGATE_NOTE), flags=re.DOTALL)
+
+
+def test_aggregate_note_paragraphs_carry_sources():
+    """Every paragraph in the note that states a number names a source or an instrument."""
+    body = re.sub(r"```.*?```", "", _note_body(), flags=re.DOTALL)
+    unsourced = []
+    for para in re.split(r"\n\s*\n", body):
+        flat = " ".join(para.split())
+        if not flat:
+            continue
+        if NUMERIC.search(flat) and not SOURCED.search(flat):
+            unsourced.append(flat[:100])
+    assert not unsourced, f"numbers without a source/instrument in {AGGREGATE_NOTE}:\n" + "\n".join(
+        unsourced
+    )
+
+
+def test_aggregate_note_numbers_sit_beside_their_instrument():
+    """The note's flagship numbers must appear beside their instrument fingerprint tokens."""
+    body = _note_body()
+    for number, needs in [
+        ("0.9285", ["falcon-7b", "4-bit", "seed 17"]),  # slice aggregate
+        ("61.5", ["falcon-7b", "4-bit", "seed 17"]),  # slice operating point
+        ("86.0", ["hc3-mini", "n=100", "seed=17"]),  # reference-corpus comparison
+        ("87.6", ["raid g2", "39.7", "same instrument"]),  # the decoding split
+    ]:
+        para = next((p for p in re.split(r"\n\s*\n", body) if number in p), None)
+        assert para is not None, f"flagship number {number} missing from {AGGREGATE_NOTE}"
+        flat = " ".join(para.split())
+        missing = [tok for tok in needs if tok not in flat]
+        assert not missing, f"{number} appears without instrument tokens {missing}"
+
+
+def test_aggregate_note_agrees_with_readme():
+    """One receipt, two surfaces: the note and the README fold may never drift apart."""
+    note, readme = _note_body(), _read("README.md")
+    for number in ["0.9285", "61.5", "87.6", "39.7"]:
+        assert number in note, f"{number} missing from {AGGREGATE_NOTE}"
+        assert number in readme, (
+            f"{number} is in {AGGREGATE_NOTE} but not README.md — the surfaces have drifted"
+        )
+
+
+def test_aggregate_note_no_verdict_language():
+    """The note may not parse gaige as a detector either."""
+    body = _note_body()
     for pattern in [r"gaige\s+detects", r"gaige\s+catches", r"gaige\s+flags\b"]:
         assert not re.search(pattern, body, re.IGNORECASE), f"detector framing: {pattern!r}"

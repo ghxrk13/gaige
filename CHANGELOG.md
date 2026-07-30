@@ -6,6 +6,63 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Measured numbers are quoted with the instrument that produced them, because a number without its
 instrument is not a result. Where a change altered what gaige *measures*, it says so explicitly.
 
+## [Unreleased]
+
+The provenance/trust release, in preparation.
+
+### Added
+
+- **`gaige verify`: provenance evidence sweep** (`gaige/provenance.py`): deterministic
+  checks with honest negatives: C2PA Content Credentials (including the standardized
+  generative-AI source-type declaration), the publicly checkable dwtDct image watermark,
+  and keyed text schemes reported as NEEDS_KEYS rather than pretended at. Emits evidence
+  statuses, never an AI-likeness score. The honesty rules are structural: a watermark
+  negative may read ABSENT only when a probe payload embedded into that same image
+  survives a round trip proving the carrier could have held the mark, otherwise the
+  result is INCONCLUSIVE (on an unfavourable carrier the decoder returns silence either
+  way); C2PA absence is a typed signal measured against c2pa-python 0.37.2 (only
+  ManifestNotFound reads ABSENT; unsupported file types read INCONCLUSIVE; validation
+  failures stay ERROR, never "no manifest"); image-only scheme rows appear only on image
+  sweeps; carriers below the watermark scheme's 256x256-pixel contract read INCONCLUSIVE,
+  never a crash. Every result states what a negative from it means, and every sweep
+  carries the verifier fingerprint including which optional libraries were absent. Live
+  arms verified on real fixtures: a locally signed C2PA asset (validation state Valid,
+  generative source declared), a watermark written by the real ecosystem encoder and
+  recovered from disk, honest ABSENT with a passing probe, INCONCLUSIVE below the size
+  contract, and a corrupted manifest reading ERROR.
+- **Vendored dwtDct codec** (`gaige/_dwtdct.py`): invisible-watermark 0.2.0 imports torch
+  at package-import time for an unrelated scheme, so its torch-free dwtDct path is
+  unreachable without installing torch; the roughly one hundred lines gaige needs are
+  vendored (MIT attribution in NOTICE.md) and the codec becomes part of the fingerprinted
+  instrument. Bit-format compatibility is cross-validated against the real library in
+  both directions on three carriers, including bit-identical encoder output arrays; a
+  real-encoder golden fixture (`tests/data/`) pins ecosystem compatibility and
+  numeric-stack drift in one byte comparison, with proven teeth (a self-consistent codec
+  mutation greens every roundtrip test and reds only the golden). The install remedy is
+  now actually curative: PyWavelets + opencv-python-headless, or the new `gaige[verify]`
+  extra covering both sweep arms in one step.
+- **Measured per-instrument memory floors with a deliberate escape hatch**
+  (`gaige/memfloor.py`; the 0.0.2 acceptance finding): the floor the loaders enforce and
+  the needs `gaige plan` prints are now the same single-sourced numbers and cannot
+  disagree. Configurations with a measured receipt get their measured floor (which raised
+  falcon-7b fp16 to its measured 13.7 GB; the flat 8.0 under-protected it), unmeasured
+  configurations keep a conservative default rather than a guess, and `--min-free-gb` on
+  `gaige run` is the always-winning deliberate override. Both refusal messages now name
+  the floor's provenance and the remedy.
+- **"What the aggregate hides"** (`docs/what-the-aggregate-hides.md`): the first RAID
+  slice receipt written up as a short note. One instrument (Fast-DetectGPT, falcon-7b,
+  4-bit) reads TPR@1%FPR 86.0% on its reference corpus (hc3-mini n=100 seed=17), 61.5%
+  aggregate on the harder raid g2x d2x a2 slice, and inside that aggregate greedy 87.6%
+  vs sampled 39.7%: a 47.9-point spread no aggregate row can show. Conformal a=.005
+  refused at slice n by construction. The claims-policy tests hold the note to report
+  bar: every number beside its instrument, blocked claims swept.
+
+### Changed
+
+- CI pins the ruff lint rule selection explicitly: ruff 0.16.0 widened its default rule
+  set, which would have turned the unpinned gate red repo-wide on its next run. Lint
+  behavior no longer moves when the linter's defaults do.
+
 ## [0.0.2] - 2026-07-29
 
 ### Added

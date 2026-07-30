@@ -165,6 +165,30 @@ an IP address, or a URL off the public allowlist refuses the whole export and na
 Reports without `env.json` refuse: INSTRUMENT UNKNOWN receipts are not exportable. Site
 placement is a site-repo concern; this command only produces the artifact.
 
+### 2e. Provenance evidence sweep (built 2026-07-29; no model, no GPU, any machine)
+
+```bash
+python -m gaige.cli verify photo.png            # C2PA + image watermark carriers
+python -m gaige.cli verify document.pdf         # C2PA only (non-image media)
+python -m gaige.cli verify --text "some prose"  # keyed text schemes
+python -m gaige.cli verify photo.png --json
+```
+
+Deterministic evidence, never a score: each scheme reports FOUND / ABSENT / INCONCLUSIVE /
+NEEDS_KEYS / UNAVAILABLE / NO_PUBLIC_DETECTOR / ERROR plus what a negative from it means.
+The rule that matters: a watermark negative is **ABSENT only when a probe payload embedded
+into that same image survives a round trip** — otherwise the carrier can't hold the mark and
+the honest answer is INCONCLUSIVE. That rule is structural (`tests/test_provenance.py`): the
+overclaiming result cannot be constructed.
+
+The imaging checks need optional libraries; without them the sweep still runs and reports
+UNAVAILABLE with the exact install remedy. The dwtDct codec itself is vendored
+(`gaige/_dwtdct.py`, bit-format-compatible with invisible-watermark 0.2.0), so the only
+optional pieces are PyWavelets + OpenCV: `pip install "gaige[verify]"` covers both arms in
+one step. Keyed text schemes (SynthID-Text, red/green-list) are honestly NEEDS_KEYS:
+without the deployer's key there is nothing to measure, and a tool claiming otherwise is
+checking something else.
+
 ## 3. Workflow B: longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
 
 ### 3a. Run a probe set (built 2026-07-22)

@@ -18,30 +18,40 @@ from __future__ import annotations
 import os
 import shutil
 
+from . import memfloor
+
+
+def _floor_needs(detector: str, instrument: str, quant: str) -> dict:
+    """Detector rows take their needs from the memory-floor table (single source: the
+    number `plan` prints and the number the loader enforces cannot disagree)."""
+    f = memfloor.MEASURED[(detector, instrument, quant)]
+    return {"vram_free_gb": f.gb} if f.kind == "vram" else {"ram_gb": f.gb}
+
+
 # Measured cost anchors. Provenance: bench receipts, 2026-07-22 (pinned env). A different
 # machine will differ — the anchor names its instrument so nobody mistakes it for a spec.
 CONFIGS = [
     {
         "config": "detect · fast-detect-gpt · falcon-7b 4bit",
-        "needs": {"vram_free_gb": 8.0},  # detector floor (protects co-resident work)
+        "needs": _floor_needs("fast-detect-gpt", "tiiuae/falcon-7b", "4bit"),
         "attestation": "verified (Linear4bit count + resident bytes)",
         "anchor": "200 texts in 25 s (~0.13 s/sample) — bench 2026-07-22, report 163959",
     },
     {
         "config": "detect · fast-detect-gpt · falcon-7b fp16",
-        "needs": {"vram_free_gb": 13.7},
+        "needs": _floor_needs("fast-detect-gpt", "tiiuae/falcon-7b", "fp16"),
         "attestation": "verified (resident bytes)",
         "anchor": "200 texts ≈ 2 min incl. load — bench 2026-07-22, report 221356",
     },
     {
         "config": "detect · fast-detect-gpt · gpt2-large fp32 (CPU)",
-        "needs": {"ram_gb": 8.0},
+        "needs": _floor_needs("fast-detect-gpt", "gpt2-large", "fp32"),
         "attestation": "verified",
         "anchor": "0.64 s/sample — bench 2026-07-22, report 174021 (measured CPU default)",
     },
     {
         "config": "detect · binoculars · falcon-7b + falcon-7b-instruct 4bit",
-        "needs": {"vram_free_gb": 9.0},  # two-model floor
+        "needs": _floor_needs("binoculars", "tiiuae/falcon-7b+tiiuae/falcon-7b-instruct", "4bit"),
         "attestation": "verified (both models proven on one receipt)",
         "anchor": "8.07 GB resident, two forward passes/text — bench 2026-07-22, report 213952",
     },

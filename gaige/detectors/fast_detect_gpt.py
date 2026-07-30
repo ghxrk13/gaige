@@ -94,7 +94,9 @@ class FastDetectGPT:
     quant: str = "4bit"  # "4bit" (CUDA only) | "fp16" | "fp32"
     max_tokens: int = 1024
     device: str = "auto"  # "auto" | "cuda" | "cpu"
-    min_free_gb: float = 8.0
+    # None -> the measured floor for this configuration, else a conservative default;
+    # an explicit value is the deliberate escape hatch. See gaige/memfloor.py.
+    min_free_gb: float | None = None
     model_auto_selected: bool = False
     name: str = field(init=False, default="fast-detect-gpt")
     _loaded: bool = field(init=False, default=False)
@@ -172,7 +174,7 @@ class FastDetectGPT:
                 "expect the load verifier to abort. Use a transformers 4.x environment."
             )
 
-        self._check_memory_floor(device)
+        self._check_memory_floor(device, quant)
 
         self._tok = AutoTokenizer.from_pretrained(self.model_id)
         kwargs: dict = {}
@@ -225,26 +227,30 @@ class FastDetectGPT:
         self._verify_quantization(quant)
         self._loaded = True
 
-    def _check_memory_floor(self, device: str) -> None:
+    def _check_memory_floor(self, device: str, quant: str) -> None:
         """Refuse to start a load that would evict co-resident work."""
         import torch
 
+        from .. import memfloor
+
         if device == "cuda":
             free_b, _total_b = torch.cuda.mem_get_info()
-            if free_b / 1e9 < self.min_free_gb:
-                raise RuntimeError(
-                    f"refusing to load: {free_b / 1e9:.1f} GB free VRAM < {self.min_free_gb} GB "
-                    "floor (protects co-resident workloads)"
-                )
+            free = free_b / 1e9
+            floor, why = memfloor.effective_floor(
+                self.min_free_gb, self.name, self.model_id, quant, "vram"
+            )
+            if free < floor:
+                raise RuntimeError(memfloor.refusal("free VRAM", free, floor, why))
             return
         avail = _available_ram_gb()
         if avail is None:
             log.info("could not determine available RAM; skipping the memory floor check")
-        elif avail < self.min_free_gb:
-            raise RuntimeError(
-                f"refusing to load: {avail:.1f} GB available RAM < {self.min_free_gb} GB floor. "
-                "Lower min_free_gb deliberately, or use a smaller --model."
-            )
+            return
+        floor, why = memfloor.effective_floor(
+            self.min_free_gb, self.name, self.model_id, quant, "ram"
+        )
+        if avail < floor:
+            raise RuntimeError(memfloor.refusal("available RAM", avail, floor, why))
 
     def _verify_quantization(self, quant: str) -> None:
         """Prove the load matched the request; refuse to score otherwise."""

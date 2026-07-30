@@ -59,7 +59,10 @@ class Binoculars:
     quant: str = "4bit"  # "4bit" (CUDA only) | "fp16" | "fp32"
     max_tokens: int = 512
     device: str = "auto"
-    min_free_gb: float = 9.0  # room for TWO 7B loads at 4-bit beside co-resident work
+    # None -> the measured floor for this configuration, else a conservative default (9.0:
+    # room for TWO 7B loads at 4-bit beside co-resident work); an explicit value is the
+    # deliberate escape hatch. See gaige/memfloor.py.
+    min_free_gb: float | None = None
     name: str = field(init=False, default="binoculars")
     _loaded: bool = field(init=False, default=False)
     _device: str = field(init=False, default="")
@@ -151,19 +154,24 @@ class Binoculars:
         if fell_back:
             log.warning("no CUDA device; Binoculars on CPU is a DIFFERENT instrument (recorded)")
 
+        from .. import memfloor
+
+        pair = f"{self.observer_id}+{self.performer_id}"
+        note = " and Binoculars loads TWO models"
         if device == "cuda":
             free_b, _ = torch.cuda.mem_get_info()
-            if free_b / 1e9 < self.min_free_gb:
-                raise RuntimeError(
-                    f"refusing to load: {free_b / 1e9:.1f} GB free VRAM < {self.min_free_gb} "
-                    "GB floor (Binoculars loads TWO models; protects co-resident workloads)"
-                )
+            free = free_b / 1e9
+            floor, why = memfloor.effective_floor(self.min_free_gb, self.name, pair, quant, "vram")
+            if free < floor:
+                raise RuntimeError(memfloor.refusal("free VRAM", free, floor, why, note))
         else:
             avail = _available_ram_gb()
-            if avail is not None and avail < self.min_free_gb:
-                raise RuntimeError(
-                    f"refusing to load: {avail:.1f} GB available RAM < {self.min_free_gb} GB floor"
+            if avail is not None:
+                floor, why = memfloor.effective_floor(
+                    self.min_free_gb, self.name, pair, quant, "ram"
                 )
+                if avail < floor:
+                    raise RuntimeError(memfloor.refusal("available RAM", avail, floor, why, note))
 
         self._tok = AutoTokenizer.from_pretrained(self.observer_id)
         perf_tok = AutoTokenizer.from_pretrained(self.performer_id)
