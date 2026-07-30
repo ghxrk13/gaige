@@ -33,7 +33,7 @@ Everything not listed in __all__ is internal and may move without notice.
 
 # Assigned before the re-exports below: analyze.py reads `from . import __version__` at
 # module scope, so the attribute must exist while this package is partially initialized.
-__version__ = "0.0.3"
+__version__ = "0.0.3.post1"
 
 from gaige.analyze import CorpusView, NotAReport, compute_results, load_report, read_scores_csv
 from gaige.calibrate import (
