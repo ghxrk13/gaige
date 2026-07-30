@@ -6,9 +6,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Measured numbers are quoted with the instrument that produced them, because a number without its
 instrument is not a result. Where a change altered what gaige *measures*, it says so explicitly.
 
-## [Unreleased]
+## [0.0.3] - 2026-07-30
 
-The provenance/trust release, in preparation.
+The provenance/trust release.
 
 ### Added
 
