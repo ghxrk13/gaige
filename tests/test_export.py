@@ -217,6 +217,17 @@ def test_cli_surface(tmp_path, capsys):
     assert "[export] unchanged" in capsys.readouterr().out
 
 
+def test_admit_receipts_refuse_export_with_a_typed_message(tmp_path):
+    """Admission receipts are a different document type; the refusal names the plan."""
+    d = tmp_path / "r"
+    d.mkdir()
+    (d / "results.json").write_text(json.dumps({"kind": "admit"}), encoding="utf-8")
+    (d / "env.json").write_text(json.dumps({}), encoding="utf-8")
+    with pytest.raises(NotAReport) as e:
+        export.build_export(d)
+    assert "gaige-admit-export/1" in str(e.value)
+
+
 REPORTS = Path(__file__).resolve().parent.parent / "reports"
 LOCAL_TERMS = Path.home() / ".gaige-leak-terms"
 

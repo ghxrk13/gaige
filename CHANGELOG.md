@@ -6,6 +6,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Measured numbers are quoted with the instrument that produced them, because a number without its
 instrument is not a result. Where a change altered what gaige *measures*, it says so explicitly.
 
+## [0.0.4] - 2026-07-30
+
+The admission release.
+
+### Added
+
+- **`gaige admit`: corpus-admission divergence receipts** (`gaige/admit.py`,
+  `gaige/divergence.py`): an unlabeled candidate slice measured against an accepted
+  baseline receipt, under the baseline's fingerprinted instrument. The framing is
+  trusted-vs-new: the baseline is whatever the organization has vetted, human or AI, and
+  admission measures divergence from it, never class membership. The guarantee-bearing
+  number is a two-sided split-conformal novelty rate (two one-sided bounds at alpha/2; the
+  outside-band share with a bootstrap interval beside the exchangeable expectation, and
+  each side's exact conditional Beta law printed), floored at ceil(2/alpha)-1 reference
+  scores with refusal rows where the reference cannot support the alpha asked of it.
+  Support: two-sample Kolmogorov-Smirnov distance with a bootstrap interval and
+  deliberately no p-value (the interval carries the uncertainty; a p-value invites a
+  verdict), quantile shifts at p10/p50/p90, per-document percentile placements and
+  two-sided conformal p-values, and stratified where-it-differs over the candidate's own
+  axes with rates withheld under 20 documents per stratum. Two lanes: live scoring
+  rebuilds the baseline's detector and hard-refuses on ANY instrument mismatch (a durable
+  receipt inherits the resume rule, never the one-document warning), appending crash-safe
+  with a documented salvage path; supplied scores (`--candidate-scores`) are accepted for
+  the no-GPU lane and labeled unattested, front-loaded in the receipt. The receipt never
+  says admit or reject, and the five sharp edges (divergence is not badness, baselines
+  age, scorer-relative, exchangeability, gameability) ship inside every report. Admission
+  receipts refuse `gaige export` with a typed message naming the planned
+  gaige-admit-export/1 document type.
+- **`data_license` in built-in corpus fingerprints**: hc3-mini records cc-by-sa-4.0 and
+  RAID slices record mit, each as declared by its dataset card (verified 2026-07-30),
+  flowing into env.json and exports with the rest of the corpus meta.
+
+### Changed
+
+- Tests 241 -> 280 on the bench full-deps matrix (37 added): divergence math held to hand-computed order statistics, the admit
+  pipeline end to end without a GPU (injected detector, injected live versions/device so
+  the mismatch refusal is provable anywhere), CLI error paths, and the typed export
+  refusal.
+
 ## [0.0.3] - 2026-07-30
 
 The provenance/trust release.

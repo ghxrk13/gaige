@@ -189,6 +189,36 @@ one step. Keyed text schemes (SynthID-Text, red/green-list) are honestly NEEDS_K
 without the deployer's key there is nothing to measure, and a tool claiming otherwise is
 checking something else.
 
+Live-arm fixtures for this workflow (the signed/corrupt C2PA pair, the real-encoder
+watermark, the honest-negative set) live untracked at `lab/verify-fixtures/` on the bench,
+generator scripts beside them; the release acceptance arms use exactly these.
+
+### 2f. Corpus admission: divergence from an accepted baseline (built 2026-07-30)
+
+```bash
+# live lane: score the candidate under the baseline's own instrument
+python -m gaige.cli admit --baseline reports/<ts>-<detector>/ --candidate new-material.jsonl
+# no-GPU lane: bring scores you produced with the matching instrument yourself
+python -m gaige.cli admit --baseline reports/<ts>-<detector>/ --candidate-scores scores.csv
+# restrict the reference to one labeled side of the baseline
+python -m gaige.cli admit --baseline reports/<ts>-<detector>/ --candidate new.jsonl --reference human
+```
+
+The baseline is any existing report directory; its env.json fingerprint is the standard
+being diverged from (no env.json refuses: no fingerprint, no standard). The candidate is
+unlabeled JSONL, rows {id?, text, meta?}; labels present on rows are ignored with a note.
+Out comes `reports/<ts>-admit/` with report.md, results.json, env.json, and
+candidate-scores.csv (per-document percentile among the reference, a two-sided conformal
+p-value, and a short_text flag).
+
+Refusals to expect, all working as intended: alpha rows refuse below ceil(2/alpha)-1
+reference scores (39 / 199 / 399 at the defaults); slice statistics withhold below 20
+candidate documents (per-document placements still write); strata withhold below 20 per
+stratum; the live lane hard-refuses on ANY instrument mismatch (score on the matching
+environment, or bring --candidate-scores). A crashed live run leaves scores.partial.csv;
+salvage it by passing that file to --candidate-scores. The receipt never says admit or
+reject: it measures divergence, and the decision is yours.
+
 ## 3. Workflow B: longitudinal drift (UNDER CONSTRUCTION; the probe runner is REAL)
 
 ### 3a. Run a probe set (built 2026-07-22)
@@ -383,7 +413,7 @@ mentions them.
 ## 4. Checks you can run any time
 
 ```bash
-python -m pytest tests/ -q          # 165 passed
+python -m pytest tests/ -q          # 278 passed on the no-GPU matrix; the bench's full-deps run adds the torch lanes
 python tools/check_consistency.py   # identity drift: version, headers, description, docs, imports
 python -m ruff check gaige/ tests/
 python -m ruff format --check gaige/ tests/

@@ -125,6 +125,10 @@ def fetch_hc3_mini(
         {
             "source": "HC3 (Hello-SimpleAI) via HF hub",
             "url": HC3_URL,
+            "data_license": (
+                "cc-by-sa-4.0 (HC3 dataset card, verified 2026-07-30; the card notes "
+                "stricter source licenses pass through)"
+            ),
             "raw_sha256": _sha256(raw),
             "filters": {"min_words": min_words, "max_words": max_words},
             "n_per_class": n_per_class,

@@ -1,6 +1,6 @@
 {
  "schema": "gaige-export-index/1",
- "exported_by": "gaige 0.0.3.post1",
+ "exported_by": "gaige 0.0.4",
  "receipts": [
   {
    "id": "export-clean",

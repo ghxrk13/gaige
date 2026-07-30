@@ -1,0 +1,86 @@
+===== gaige verify c2pa_signed.jpg =====
+gaige verify — provenance evidence sweep
+target: file c2pa_signed.jpg · sha256 43957c3aef989b33...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] FOUND — C2PA manifest present; validation state and any declared generative-AI source type are in the evidence
+    validation_state: Valid
+    declares_generative_source: True
+[dwtdct-image] ABSENT — no known payload decoded, and a probe payload embedded into this same image survived a round trip — the carrier can hold the mark, so the silence is informative
+    carrier self-test: PASS (probe payload embedded into this image and read back)
+    a negative here means: this image carries none of the payloads checked; it says nothing about schemes not checked or about how the image was made
+[synthid-image] NO_PUBLIC_DETECTOR — verifiable only inside the vendor's own portal; no public verifier exists. The locally checkable signal for such images is the C2PA manifest shipped alongside, checked above
+    a negative here means: nothing local can check this scheme; this carries no information
+
+===== gaige verify sd_watermarked.png =====
+gaige verify — provenance evidence sweep
+target: file sd_watermarked.png · sha256 1e002203e161af4e...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] ABSENT — no C2PA manifest in the file
+    a negative here means: credentials are routinely stripped in ordinary handling (re-encode, resize, screenshot, most upload pipelines); absence says nothing about origin
+[dwtdct-image] FOUND — recovered the StableDiffusionV1 payload via dwtDct
+    payload: StableDiffusionV1
+    method: dwtDct
+[synthid-image] NO_PUBLIC_DETECTOR — verifiable only inside the vendor's own portal; no public verifier exists. The locally checkable signal for such images is the C2PA manifest shipped alongside, checked above
+    a negative here means: nothing local can check this scheme; this carries no information
+
+===== gaige verify plain.png =====
+gaige verify — provenance evidence sweep
+target: file plain.png · sha256 57385b85ccc0ed1d...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] ABSENT — no C2PA manifest in the file
+    a negative here means: credentials are routinely stripped in ordinary handling (re-encode, resize, screenshot, most upload pipelines); absence says nothing about origin
+[dwtdct-image] ABSENT — no known payload decoded, and a probe payload embedded into this same image survived a round trip — the carrier can hold the mark, so the silence is informative
+    carrier self-test: PASS (probe payload embedded into this image and read back)
+    a negative here means: this image carries none of the payloads checked; it says nothing about schemes not checked or about how the image was made
+[synthid-image] NO_PUBLIC_DETECTOR — verifiable only inside the vendor's own portal; no public verifier exists. The locally checkable signal for such images is the C2PA manifest shipped alongside, checked above
+    a negative here means: nothing local can check this scheme; this carries no information
+
+===== gaige verify small200.png =====
+gaige verify — provenance evidence sweep
+target: file small200.png · sha256 012fc65445175c91...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] ABSENT — no C2PA manifest in the file
+    a negative here means: credentials are routinely stripped in ordinary handling (re-encode, resize, screenshot, most upload pipelines); absence says nothing about origin
+[dwtdct-image] INCONCLUSIVE — no known payload decoded, but a probe payload embedded into this same image did NOT survive a round trip — this carrier (size/texture/payload-length combination) cannot reliably hold the mark
+    carrier self-test: FAIL (probe payload embedded into this image and read back)
+    a negative here means: no information: the decoder would have returned silence here whether or not a watermark was ever embedded
+[synthid-image] NO_PUBLIC_DETECTOR — verifiable only inside the vendor's own portal; no public verifier exists. The locally checkable signal for such images is the C2PA manifest shipped alongside, checked above
+    a negative here means: nothing local can check this scheme; this carries no information
+
+===== gaige verify c2pa_corrupt.jpg =====
+gaige verify — provenance evidence sweep
+target: file c2pa_corrupt.jpg · sha256 561a3bb26ab235a3...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] ERROR — _C2paVerify: Verify: unexpected end of file
+    a negative here means: the check crashed; this carries no information
+[dwtdct-image] ABSENT — no known payload decoded, and a probe payload embedded into this same image survived a round trip — the carrier can hold the mark, so the silence is informative
+    carrier self-test: PASS (probe payload embedded into this image and read back)
+    a negative here means: this image carries none of the payloads checked; it says nothing about schemes not checked or about how the image was made
+[synthid-image] NO_PUBLIC_DETECTOR — verifiable only inside the vendor's own portal; no public verifier exists. The locally checkable signal for such images is the C2PA manifest shipped alongside, checked above
+    a negative here means: nothing local can check this scheme; this carries no information
+
+===== gaige verify note.txt =====
+gaige verify — provenance evidence sweep
+target: file note.txt · sha256 6676033e8e1249b7...
+instrument: gaige 0.0.1 · python 3.10.20 · c2pa-python 0.37.2 · PyWavelets 1.8.0 · opencv 5.0.0 · dwtdct-codec vendored; bit-format invisible-watermark 0.2.0
+
+Deterministic evidence, not a verdict: each scheme reports what was checked and what a negative would mean. No result here means "not AI" — a mark can be absent, stripped, keyed, or unverifiable, and this sweep says which.
+
+[c2pa] INCONCLUSIVE — the C2PA SDK does not support this file type (NotSupported: type is unsupported)
+    a negative here means: this file type could not be checked for credentials; it says nothing about origin
+

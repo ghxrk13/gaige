@@ -1,5 +1,19 @@
 # PROGRESS: gaige (yoto pattern)
 
+## 2026-07-30: 0.0.4, the admission release
+- `gaige admit` ships: an unlabeled candidate slice measured against an accepted baseline
+  receipt under the baseline's own fingerprinted instrument. Trusted-vs-new, not
+  human-vs-AI: the baseline is whatever the organization vetted; admission measures
+  divergence, never class membership, and the receipt never says admit or reject.
+- The guarantee-bearing number is a two-sided conformal novelty rate with each side's
+  exact Beta law printed and refusal rows below ceil(2/alpha)-1 reference scores; KS
+  distance and quantile shifts ride beside it with bootstrap intervals and no p-values.
+- Live scoring hard-refuses on any instrument mismatch (a durable receipt inherits the
+  resume rule); supplied scores are accepted for the no-GPU lane and labeled unattested,
+  front-loaded in the receipt. Tests 241 -> 280.
+- Built-in corpora now record data_license from their dataset cards (hc3-mini
+  cc-by-sa-4.0, RAID slices mit; verified against the cards 2026-07-30).
+
 ## 2026-07-30: 0.0.3, the provenance release
 - `gaige verify` ships: provenance evidence statuses, never a score. C2PA absence is a
   typed signal (only ManifestNotFound reads ABSENT; a validation failure can never read
@@ -32,10 +46,10 @@
 ## 2026-07-27: 0.0.1 is PUBLIC, and it survived both stranger passes
 - PyPI 0.0.1 live; wheel sha `00db4316…` fetched from the outside matches the shipping
   hash byte-for-byte. Repo public, CI green, tag v0.0.1 = f04d463, gaige.dev serving.
-- The outside-user acceptance gate closed BOTH arms: pre-publish (2 findings fixed same night) + post-publish
+- Backlog 28 closed BOTH arms: pre-publish (2 findings fixed same night) + post-publish
   vs real PyPI: core py3.12, py3.10 container, and the docs-verbatim CPU quickstart
   (py3.13) all pass; the gpu-extra remedy line prints verbatim at exit 2 in the wild.
-  Receipt transcripts are held in the private ops archive.
+  Receipt: gaige-ops/research/accept-0.0.1-postpublish-2026-07-27.md.
 - Two docs-grade findings banked: the stranger's CPU quickstart saturates at
   AUROC 1.0000 on gpt2-large/hc3-mini (README saturation note queued, because a perfect first
   number reads wrong), and transformers' torch_dtype deprecation warning surfaces.

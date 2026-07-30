@@ -1,0 +1,72 @@
+# gaige release — build/publish split for Trusted Publishing (PEP 740 attestations ride free).
+#
+# Two lanes, one workflow file:
+#   workflow_dispatch          -> TestPyPI (environment `testpypi`) — the rehearsal lane, so a
+#                                 real cut never runs a never-run workflow.
+#   push of a v* tag           -> PyPI (environment `pypi`, required reviewer) — the cut lane.
+#
+# The publish jobs never check out the repo: they receive the built artifacts and nothing
+# else, and their only privilege is the OIDC token for the publisher exchange. The publish
+# action is pinned by full commit SHA because it handles that exchange.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Print artifact digests (compared against the swept bytes in the release receipt)
+        run: sha256sum dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-testpypi:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to TestPyPI (rehearsal lane)
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI (reviewer-gated)
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

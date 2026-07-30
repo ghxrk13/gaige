@@ -40,6 +40,14 @@ And since 0.0.3, a third surface on the same honesty rules: **`gaige verify`**, 
 evidence sweep (C2PA Content Credentials, image watermarks, keyed text schemes) that emits
 evidence statuses, never a score, and states in every result what a negative from it means.
 
+0.0.4 adds **`gaige admit`**: corpus admission on the same rules. Point it at an accepted
+baseline receipt and an unlabeled candidate slice, and it measures divergence from what you
+already trust: a conformal novelty rate carrying an exact finite-sample false-alarm law, KS
+distance and quantile shifts with bootstrap intervals, per-document placements, and
+stratified where-it-differs, with refusal floors wherever the evidence is too thin. The
+baseline is whatever your organization has vetted, human or AI; admission measures
+divergence, not class membership, and the receipt never says admit or reject.
+
 Scoring needs a model and ideally a GPU. **Analysis does not**: `gaige analyze` re-derives
 thresholds and reports from scores that already exist, so calibration runs on a laptop, or a
 CPU-only machine, or an isolated environment with no accelerator at all.
@@ -54,6 +62,8 @@ gaige run --corpus hc3-mini --n 100 --detector fast-detect-gpt
 gaige run --corpus your-labeled.jsonl   # rows: {"text": ..., "label": "human"|"ai"}
 pip install "gaige[verify]"             # provenance evidence: c2pa-python + PyWavelets + opencv
 gaige verify picture.png                # evidence statuses (FOUND/ABSENT/INCONCLUSIVE/NEEDS_KEYS), never a score
+gaige admit --baseline reports/<ts>-<detector>/ --candidate new-material.jsonl
+# → divergence of new material from your accepted baseline: intervals + refusal floors, never a verdict
 ```
 
 On a CPU machine the quickstart saturates: the auto-selected gpt2-large separates this
@@ -200,6 +210,20 @@ library in both directions, and pinned by a real-encoder golden fixture in CI ·
 deliberate escape hatch, named in both refusal messages · "what the aggregate hides"
 (`docs/`): TPR@1%FPR 86.0% on the reference corpus, 61.5% aggregate on a harder RAID slice,
 and greedy 87.6% vs sampled 39.7% inside that aggregate.
+
+v0.0.4 (the admission release): **`gaige admit`** — unlabeled candidate material measured
+against an accepted baseline receipt under the baseline's fingerprinted instrument. The
+guarantee-bearing number is a two-sided conformal novelty rate: the share of candidate
+documents outside the baseline's acceptance band, beside the exchangeable expectation, with
+each side's exact conditional Beta law printed and a floor of ceil(2/alpha)-1 reference
+scores (a tighter guarantee than your data supports is refused, not granted). Support:
+two-sample KS distance and quantile shifts with bootstrap intervals and deliberately no
+p-values, per-document placements with two-sided conformal p-values, and stratified
+where-it-differs with rates withheld under 20 documents per stratum. Live scoring refuses
+on any instrument mismatch; supplied scores are accepted for the no-GPU lane and labeled
+unattested. Verdict-free by construction: the receipt never says admit or reject ·
+**data_license on built-in corpora**: hc3-mini and RAID slices now record the dataset
+card's declared license in every receipt's corpus fingerprint.
 
 Full history: [CHANGELOG](https://github.com/ghxrk13/gaige/blob/main/CHANGELOG.md).
 

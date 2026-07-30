@@ -16,6 +16,7 @@ gaige test-connection --endpoint http://127.0.0.1:8080 [--gguf model.gguf]
 gaige corpora
 gaige corpus prepare-raid --generators gpt4,mistral-chat --domains abstracts,reddit
 gaige verify photo.png                              # provenance evidence sweep, no model
+gaige admit   --baseline reports/<ts>-<detector>/ --candidate new-material.jsonl
 """
 
 from __future__ import annotations
@@ -623,6 +624,45 @@ def cmd_verify(args) -> int:
     return 0
 
 
+def cmd_admit(args) -> int:
+    from . import admit as admit_mod
+
+    alphas = tuple(float(x) for x in args.alphas.split(",") if x.strip())
+    if not alphas:
+        raise SystemExit("--alphas needs at least one value")
+    r = admit_mod.run_admit(
+        Path(args.baseline),
+        candidate_path=Path(args.candidate) if args.candidate else None,
+        candidate_scores_path=Path(args.candidate_scores) if args.candidate_scores else None,
+        reference=args.reference,
+        alphas=alphas,
+        n_boot=args.n_boot,
+        seed=args.seed,
+        out=Path(args.out) if args.out else None,
+        root=Path(args.root),
+    )
+    res = r["results"]
+    if res["primary_alpha"] is not None:
+        row = next(x for x in res["novelty"] if x.get("alpha") == res["primary_alpha"])
+        lo, hi = row["outside_ci"]
+        print(
+            f"[admit] novelty at α={row['alpha']:g}: {row['n_outside']}/{row['n_candidate']} "
+            f"outside the band ({row['outside_rate']:.1%} [{lo:.1%}–{hi:.1%}]; "
+            f"exchangeable expectation <= {row['alpha']:g})"
+        )
+    elif res["floors"]["slice_stats_withheld"]:
+        print(
+            f"[admit] slice statistics withheld: {res['candidate']['n']} candidate documents "
+            f"is below the {res['floors']['candidate_min_for_slice_stats']}-document floor; "
+            "per-document placements written"
+        )
+    else:
+        print("[admit] no requested alpha is supported by this reference size; see the receipt")
+    print("[admit] measurements, never a verdict — the admission decision is yours")
+    print(f"[admit] written to {r['report_path']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="gaige", description=__doc__)
     p.add_argument("--version", action="version", version=f"gaige {__version__}")
@@ -929,6 +969,43 @@ def main(argv=None) -> int:
     )
     ve.add_argument("--json", action="store_true")
     ve.set_defaults(fn=cmd_verify)
+
+    ad = sub.add_parser(
+        "admit",
+        help="measure divergence of unlabeled candidate material from an accepted baseline "
+        "receipt — intervals and refusal floors, never an admit/reject verdict",
+    )
+    ad.add_argument(
+        "--baseline",
+        required=True,
+        help="an existing reports/<ts>-<detector>/ directory; its env.json fingerprint is "
+        "the standard being diverged from",
+    )
+    ad_src = ad.add_mutually_exclusive_group(required=True)
+    ad_src.add_argument("--candidate", help="unlabeled candidate JSONL: rows {id?, text, meta?}")
+    ad_src.add_argument(
+        "--candidate-scores",
+        help="pre-scored CSV (column: score[, id, n_words, meta]) — the no-GPU lane; "
+        "provenance is labeled unattested",
+    )
+    ad.add_argument(
+        "--reference",
+        default="all",
+        choices=["all", "human", "ai"],
+        help="which baseline rows define 'accepted': the whole trusted corpus (default) or "
+        "one labeled side",
+    )
+    ad.add_argument(
+        "--alphas",
+        default="0.05,0.01,0.005",
+        help="comma list; two-sided conformal band per alpha (floor: ceil(2/alpha)-1 "
+        "reference scores — 39 / 199 / 399 at the defaults)",
+    )
+    ad.add_argument("--n-boot", type=int, default=1000)
+    ad.add_argument("--seed", type=int, default=17)
+    ad.add_argument("--out", help="receipt directory (default: <root>/reports/<ts>-admit)")
+    ad.add_argument("--root", default=".", help="project root holding reports/")
+    ad.set_defaults(fn=cmd_admit)
 
     args = p.parse_args(argv)
     try:
