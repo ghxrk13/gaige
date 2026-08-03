@@ -250,6 +250,11 @@ but under a different name. See
 [TRADEMARK.md](https://github.com/ghxrk13/gaige/blob/main/TRADEMARK.md); the standards there
 exist so that "a gaige report" keeps meaning something.
 
+gaige is an invented word: gauge, with ai set inside it (the wordmark on
+[gaige.dev](https://gaige.dev) draws the ai in verdigris). The bench reads the letters as
+*good ai gauging evidence*. The adjective is defined operationally: a number that cannot be
+quoted apart from its instrument, which is the only kind gaige emits.
+
 Maintainership is deliberately closed (see
 [CONTRIBUTING.md](https://github.com/ghxrk13/gaige/blob/main/CONTRIBUTING.md)), but issues and
 receipt-backed reproductions very welcome; pull requests not accepted at this time.
