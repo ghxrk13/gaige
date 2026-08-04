@@ -93,7 +93,7 @@ import numpy as np
 import gaige
 
 # Replay an existing report — recompute every statistic from its scores.csv.
-rows, corpus, meta = gaige.load_report(Path("reports/2026-07-26T18-02-11Z"))
+rows, corpus, meta = gaige.load_report(Path("reports/20260725-035507-fast-detect-gpt"))
 results = gaige.compute_results(rows)
 
 # Or bring scores from any instrument of your own (gaige refuses under 50 per class —
@@ -141,8 +141,9 @@ under plain configuration changes (sampling strategy, repetition penalty, an uns
 measured in RAID) with no "attack" involved.
 
 **Even flagship thresholds are global.** Binoculars (best worst-case in the audit above and
-best in the black-box evaluation) ships a single global threshold (0.901) optimized for
-accuracy on three reference datasets; its headline 0.01%-FPR figure is a point read off a
+best in the black-box evaluation) ships two global thresholds (0.9015 accuracy-mode,
+0.8536 low-FPR-mode), both optimized on three reference datasets; its headline
+0.01%-FPR figure is a point read off a
 ROC curve, not a deployment threshold. Measured here: the paper's global thresholds run at
 16% and 3% FPR on our reference corpus (hc3-mini, n=100, seed=17, both scoring models
 quant-verified on the receipt). Thresholds do not transfer. That is not a flaw in
