@@ -166,7 +166,7 @@ flagship paper's own tables show its disparity cut bought with mean F1 collapsin
 decoding: on a stratified slice (raid g2×d2×a2, per-cell reservoir seed 17; instrument
 Fast-DetectGPT, falcon-7b, 4-bit, cuda), aggregate AUROC 0.9285 and TPR@1%FPR 61.5%
 (against 86% on the reference corpus, same instrument, harder corpus) concealed a decoding
-split of greedy 87.6% vs sampled 39.7% TPR@1%FPR: a 48-point spread inside one aggregate.
+split of greedy 87.6% vs sampled 39.7% TPR@1%FPR: a 47.9-point spread inside one aggregate.
 Per-subgroup rates with intervals, and refusals where n is too small to say, are the honest
 form of the answer.
 
