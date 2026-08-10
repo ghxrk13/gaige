@@ -177,7 +177,7 @@ python -m gaige.cli verify photo.png --json
 Deterministic evidence, never a score: each scheme reports FOUND / ABSENT / INCONCLUSIVE /
 NEEDS_KEYS / UNAVAILABLE / NO_PUBLIC_DETECTOR / ERROR plus what a negative from it means.
 The rule that matters: a watermark negative is **ABSENT only when a probe payload embedded
-into that same image survives a round trip** — otherwise the carrier can't hold the mark and
+into that same image survives a round trip**; otherwise the carrier can't hold the mark and
 the honest answer is INCONCLUSIVE. That rule is structural (`tests/test_provenance.py`): the
 overclaiming result cannot be constructed.
 

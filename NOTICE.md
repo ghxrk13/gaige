@@ -28,7 +28,7 @@ arXiv:2310.05130 · reference implementation: https://github.com/baoguangsheng/f
 
 `gaige/_dwtdct.py` is derived from **invisible-watermark 0.2.0**
 (https://github.com/ShieldMnt/invisible-watermark), MIT License, Copyright (c) 2021
-ShieldMnt — the dwtDct encode/decode path only, vendored so the codec is part of the
+ShieldMnt; the dwtDct encode/decode path only, vendored so the codec is part of the
 fingerprinted instrument (and so its install remedy actually cures; the upstream package
 imports torch at package-import time for an unrelated scheme). Bit-format compatibility
 with the upstream implementation is deliberate and cross-validated. As required by the MIT
