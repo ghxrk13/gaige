@@ -123,7 +123,7 @@ def cmd_run(args) -> int:
         else f"--model {args.model}"
     )
     reproduce = (
-        f"gaige run --corpus {args.corpus} --n {args.n} --seed {args.seed} "
+        f"gaige run --corpus {Path(args.corpus).name} --n {args.n} --seed {args.seed} "
         f"--detector {args.detector} {model_bits} --quant {args.quant} "
         f"--device {resolved_device} --max-tokens {args.max_tokens}"
     )
@@ -163,7 +163,7 @@ def cmd_run(args) -> int:
         fh.close()
         print(
             f"\n[interrupted] {len(rows)}/{len(corpus.items)} scores are safe on disk.\n"
-            f"[interrupted] resume with:  gaige run --corpus {args.corpus} --n {args.n} "
+            f"[interrupted] resume with:  gaige run --corpus {Path(args.corpus).name} --n {args.n} "
             f"--seed {args.seed} --resume {outdir}"
         )
         raise

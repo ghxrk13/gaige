@@ -62,7 +62,7 @@ def load_jsonl(path: Path, name: str | None = None) -> Corpus:
         path=path,
         items=items,
         sha256=_sha256(path),
-        meta={"source": str(path)},
+        meta={"source": path.name},
     )
 
 
