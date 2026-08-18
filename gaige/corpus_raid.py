@@ -337,7 +337,7 @@ def prepare_raid_slice(
         {
             "dataset": DATASET,
             "dataset_revision": revision,
-            "source": ("datasets-server pages" if source == "hub" else f"local csv {raid_csv}"),
+            "source": ("datasets-server pages" if source == "hub" else f"local csv {Path(raid_csv).name}"),
             "selection": {
                 "generators": generators,
                 "domains": domains,
