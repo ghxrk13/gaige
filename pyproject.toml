@@ -4,7 +4,7 @@ version = "0.0.4"
 description = "Calibration and drift receipts for AI measurement: your corpus, your thresholds, honest error bars, and proof the instrument has not changed."
 readme = "README.md"
 license = { text = "AGPL-3.0-only" }
-authors = [{ name = "ghxrk13" }]
+authors = [{ name = "Twilight Ventures LLC" }]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",

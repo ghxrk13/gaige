@@ -2,7 +2,7 @@
 
 The code is free software (AGPL-3.0, with commercial terms available). **The name is not part
 of that grant.** Neither the AGPL nor any other open-source license transfers trademark
-rights, and "gaige" is the project's mark, owned by ghxrk13.
+rights, and "gaige" is the project's mark, owned by Twilight Ventures LLC.
 
 This is not a technicality for a tool like this one. gaige exists so that a number can be
 trusted because of how it was produced. If anyone could ship anything and call it gaige, a

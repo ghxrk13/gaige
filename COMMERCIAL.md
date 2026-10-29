@@ -39,6 +39,6 @@ how it opens on terms.
 
 ## Copyright
 
-Copyright holder: ghxrk13, sole owner of all code in this repository. Dual licensing depends
+Copyright holder: Twilight Ventures LLC, sole owner of all code in this repository. Dual licensing depends
 on single ownership, which is why contributions are not accepted without a signed CLA (see
 `CONTRIBUTING.md`).

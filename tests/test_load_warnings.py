@@ -1,5 +1,5 @@
 # gaige — calibration and drift receipts for AI measurement.
-# Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
+# Copyright (C) 2026 Twilight Ventures LLC. Licensed under AGPL-3.0-only; see LICENSE.
 
 """The upstream torch_dtype rename notice stays out of a stranger's terminal.
 

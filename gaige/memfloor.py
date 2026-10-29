@@ -1,5 +1,5 @@
 # gaige — calibration and drift receipts for AI measurement.
-# Copyright (C) 2026 ghxrk13. Licensed under AGPL-3.0-only; see LICENSE.
+# Copyright (C) 2026 Twilight Ventures LLC. Licensed under AGPL-3.0-only; see LICENSE.
 # Commercial licensing available — see COMMERCIAL.md.
 
 """Memory floors, single-sourced (0.0.2 acceptance finding, backlog 36).
